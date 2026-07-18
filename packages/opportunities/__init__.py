@@ -3,6 +3,14 @@
 Tiering is a deterministic gate over presence-of-fields (spec 05 §4, invariant O2).
 """
 
+from .engine import EvaluateResult, OpportunityEngine, Transition
 from .tiering import OpportunityPresence, Tier, classify
 
-__all__ = ["Tier", "OpportunityPresence", "classify"]
+__all__ = [
+    "Tier",
+    "OpportunityPresence",
+    "classify",
+    "OpportunityEngine",
+    "EvaluateResult",
+    "Transition",
+]
