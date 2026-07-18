@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from extraction import CandidateRecord, EvidenceDraft, build_candidate
+from extraction import CandidateRecord, EvidenceDraft, build_candidate, extract_people
 from ingestion import RawResponse
 from normalization import apex_domain, normalize_company_name
 from parsing import ParsedDocument, parse_html
@@ -67,4 +67,6 @@ class CompanyWebCollector(BaseCollector):
 
         # Full signal classification (funding, hiring+department, tech, pain, launch).
         candidates.extend(classify_document(doc, apex))
+        # People from team/about pages (context = this company's apex).
+        candidates.extend(extract_people(doc, apex))
         return candidates

@@ -6,5 +6,6 @@ here make that impossible to violate — a candidate cannot be built without an
 """
 
 from .evidence import CandidateRecord, EvidenceDraft, build_candidate
+from .person import extract_people
 
-__all__ = ["EvidenceDraft", "CandidateRecord", "build_candidate"]
+__all__ = ["EvidenceDraft", "CandidateRecord", "build_candidate", "extract_people"]

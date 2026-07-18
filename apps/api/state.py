@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pipeline import M0Pipeline
 from storage.repositories import (
     InMemoryBlockingRepo,
+    InMemoryEdgeRepo,
     InMemoryEntityRepo,
     InMemoryEvidenceRepo,
     InMemoryMergeRepo,
@@ -37,6 +38,7 @@ class AppState:
     merges: InMemoryMergeRepo
     timeline: InMemoryTimelineRepo
     transitions: InMemoryTransitionRepo
+    edges: InMemoryEdgeRepo
 
     @property
     def pipeline(self) -> M0Pipeline:
@@ -52,6 +54,7 @@ class AppState:
             merges=self.merges,
             timeline=self.timeline,
             transitions=self.transitions,
+            edges=self.edges,
         )
 
 
@@ -67,4 +70,5 @@ def new_state() -> AppState:
         merges=InMemoryMergeRepo(),
         timeline=InMemoryTimelineRepo(),
         transitions=InMemoryTransitionRepo(),
+        edges=InMemoryEdgeRepo(),
     )

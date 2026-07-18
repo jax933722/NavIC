@@ -28,6 +28,7 @@ export interface OpportunityCard {
   opportunity_score: number;
   department: string | null;
   decision_maker_role: string | null;
+  person_name: string | null;
   evidence_refs: EvidenceRef[];
   updated_at: string;
 }

@@ -31,6 +31,7 @@ class OpportunityCard(BaseModel):
     opportunity_score: float
     department: str | None = None
     decision_maker_role: str | None = None
+    person_name: str | None = None  # set for Gold (resolved decision maker)
     evidence_refs: list[EvidenceRef] = []
     updated_at: datetime
 

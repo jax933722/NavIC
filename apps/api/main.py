@@ -77,6 +77,11 @@ def _company_ref(state: AppState, company_id: int) -> CompanyRef:
 
 
 def _card(state: AppState, opp) -> OpportunityCard:
+    person_name = None
+    if opp.person_entity_id:
+        person = state.entities.get(opp.person_entity_id)
+        if person:
+            person_name = person.display_name or person.attributes.get("full_name")
     return OpportunityCard(
         id=opp.id,
         tier=opp.tier,
@@ -85,6 +90,7 @@ def _card(state: AppState, opp) -> OpportunityCard:
         opportunity_score=round(opp.opportunity_score, 4),
         department=opp.department,
         decision_maker_role=opp.decision_maker_role,
+        person_name=person_name,
         evidence_refs=_evidence_refs(state, opp.evidence_ids),
         updated_at=opp.updated_at,
     )

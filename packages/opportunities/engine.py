@@ -57,10 +57,12 @@ class OpportunityEngine:
         entities: EntityRepository,
         signals: SignalRepository,
         opportunities: OpportunityRepository,
+        edges=None,
     ):
         self._entities = entities
         self._signals = signals
         self._opps = opportunities
+        self._edges = edges
 
     def evaluate(self, company_entity_id: int) -> EvaluateResult:
         result = EvaluateResult()
@@ -86,6 +88,29 @@ class OpportunityEngine:
     def _emit(self, result, company_id, template: Template, matching, tier: Tier) -> None:
         department = _best_department(matching, template.suggested_department)
         dm_role = decision_maker_for(department, template.suggested_decision_maker_role)
+
+        # Gold: a resolved leadership person connected to this company via a
+        # works_at edge (relationship evidence) upgrades the opportunity.
+        person = self._find_decision_maker(company_id, department)
+        if person is not None:
+            person_id, person_role, rel_evidence = person
+            presence = OpportunityPresence(
+                company=True, domain=True, buying_signal=True, person=True, role=True,
+                relationship_evidence=True,
+            )
+            final_tier = classify(presence)
+            evidence_ids = [e for s in matching for e in s.evidence_ids] + rel_evidence
+            row = OpportunityRow(
+                id=0, company_entity_id=company_id, tier=final_tier.value,
+                template_id=template.id, thesis=template.thesis,
+                opportunity_score=self._score(final_tier, matching),
+                department=department, decision_maker_role=person_role,
+                person_entity_id=person_id, primary_signal_id=matching[0].id,
+                evidence_ids=evidence_ids,
+            )
+            self._save(result, company_id, row, self._opps.find(company_id, template.id))
+            return
+
         presence = OpportunityPresence(
             company=True, domain=True, buying_signal=True,
             suggested_department=bool(department), suggested_role=bool(dm_role),
@@ -101,6 +126,27 @@ class OpportunityEngine:
             evidence_ids=[e for s in matching for e in s.evidence_ids],
         )
         self._save(result, company_id, row, prior)
+
+    def _find_decision_maker(self, company_id: int, department: str):
+        """Return (person_id, role, evidence_ids) for a leadership person at the
+        company via a works_at edge, preferring a department match. Gold requires
+        this relationship evidence (spec 05 §4)."""
+        if self._edges is None:
+            return None
+        candidates = []
+        for edge in self._edges.in_edges(company_id, "works_at"):
+            if not edge.evidence_ids:
+                continue
+            role = (edge.attributes or {}).get("role")
+            if not edge.attributes.get("leadership"):
+                continue
+            dept_match = bool(department) and department.lower() in (role or "").lower()
+            candidates.append((dept_match, edge.src_entity_id, role, list(edge.evidence_ids)))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda c: c[0], reverse=True)  # prefer department match
+        _, person_id, role, evidence_ids = candidates[0]
+        return person_id, role, evidence_ids
 
     def _emit_bronze(self, result, company_id, signals) -> None:
         presence = OpportunityPresence(company=True, domain=True, weak_signal=True)
@@ -156,10 +202,8 @@ def _satisfies(template: Template, matching: list) -> bool:
     if not any(not s.attributes.get("weak") for s in matching):
         return False  # need at least one qualifying (non-weak) signal
     # Gate: at least one type-matched signal must touch a required intent axis.
-    if template.require_intent_axis and not any(
-        s.intent_axis in template.require_intent_axis for s in matching
-    ):
-        return False
+    if template.require_intent_axis:
+        return any(s.intent_axis in template.require_intent_axis for s in matching)
     return True
 
 

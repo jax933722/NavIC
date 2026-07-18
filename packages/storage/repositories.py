@@ -240,6 +240,57 @@ class InMemoryOpportunityRepo:
 
 
 @dataclass
+class EdgeRow:
+    id: int
+    src_entity_id: int
+    dst_entity_id: int
+    edge_type: str
+    attributes: dict
+    confidence: float
+    evidence_ids: list[int]
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+
+
+class InMemoryEdgeRepo:
+    """Typed, evidence-backed graph edges (spec 02)."""
+
+    def __init__(self) -> None:
+        self._rows: dict[int, EdgeRow] = {}
+        self._by_key: dict[tuple[int, int, str], int] = {}
+        self._ids = count(1)
+
+    def upsert(self, *, src_entity_id, dst_entity_id, edge_type, attributes, confidence,
+               evidence_ids) -> EdgeRow:
+        key = (src_entity_id, dst_entity_id, edge_type)
+        existing_id = self._by_key.get(key)
+        if existing_id:
+            row = self._rows[existing_id]
+            row.evidence_ids = sorted(set(row.evidence_ids) | set(evidence_ids))
+            row.confidence = max(row.confidence, confidence)
+            row.attributes = {**row.attributes, **attributes}
+            return row
+        row = EdgeRow(
+            id=next(self._ids), src_entity_id=src_entity_id, dst_entity_id=dst_entity_id,
+            edge_type=edge_type, attributes=attributes, confidence=confidence,
+            evidence_ids=list(evidence_ids), valid_from=datetime.now(UTC),
+        )
+        self._rows[row.id] = row
+        self._by_key[key] = row.id
+        return row
+
+    def out_edges(self, src_entity_id: int, edge_type: str | None = None) -> list[EdgeRow]:
+        return [r for r in self._rows.values()
+                if r.src_entity_id == src_entity_id
+                and (edge_type is None or r.edge_type == edge_type)]
+
+    def in_edges(self, dst_entity_id: int, edge_type: str | None = None) -> list[EdgeRow]:
+        return [r for r in self._rows.values()
+                if r.dst_entity_id == dst_entity_id
+                and (edge_type is None or r.edge_type == edge_type)]
+
+
+@dataclass
 class TransitionRow:
     id: int
     opportunity_id: int

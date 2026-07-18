@@ -13,8 +13,15 @@ export function OpportunityRow({ opp }: { opp: OpportunityCard }) {
             {opp.company.name ?? "Unknown"}{" "}
             {opp.company.domain && <span className="mono">· {opp.company.domain}</span>}
           </div>
-          {opp.decision_maker_role && (
-            <div className="company">→ suggested: {opp.decision_maker_role}</div>
+          {opp.person_name ? (
+            <div className="company">
+              ★ {opp.person_name}
+              {opp.decision_maker_role ? ` · ${opp.decision_maker_role}` : ""}
+            </div>
+          ) : (
+            opp.decision_maker_role && (
+              <div className="company">→ suggested: {opp.decision_maker_role}</div>
+            )
           )}
         </div>
         <div style={{ textAlign: "right", minWidth: 120 }}>

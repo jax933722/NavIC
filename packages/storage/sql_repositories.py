@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from . import models as m
 from .repositories import (
+    EdgeRow,
     EntityRow,
     EvidenceRow,
     MergeRow,
@@ -212,6 +213,50 @@ class SqlOpportunityRepo:
     def get(self, opportunity_id: int) -> OpportunityRow | None:
         r = self.s.get(m.Opportunity, opportunity_id)
         return self._to_dto(r) if r else None
+
+
+class SqlEdgeRepo:
+    def __init__(self, session: Session):
+        self.s = session
+
+    def _dto(self, r: m.Edge) -> EdgeRow:
+        return EdgeRow(r.id, r.src_entity_id, r.dst_entity_id, r.edge_type,
+                       dict(r.attributes or {}), r.confidence, list(r.evidence_ids or []),
+                       r.valid_from, r.valid_to)
+
+    def upsert(self, *, src_entity_id, dst_entity_id, edge_type, attributes, confidence,
+               evidence_ids) -> EdgeRow:
+        r = self.s.scalar(
+            select(m.Edge).where(
+                m.Edge.src_entity_id == src_entity_id,
+                m.Edge.dst_entity_id == dst_entity_id,
+                m.Edge.edge_type == edge_type,
+                m.Edge.valid_to.is_(None),
+            )
+        )
+        if r:
+            r.evidence_ids = sorted(set(r.evidence_ids or []) | set(evidence_ids))
+            r.confidence = max(r.confidence, confidence)
+            r.attributes = {**(r.attributes or {}), **attributes}
+        else:
+            r = m.Edge(src_entity_id=src_entity_id, dst_entity_id=dst_entity_id,
+                       edge_type=edge_type, attributes=attributes, confidence=confidence,
+                       evidence_ids=list(evidence_ids), valid_from=datetime.now(UTC))
+            self.s.add(r)
+        self.s.flush()
+        return self._dto(r)
+
+    def out_edges(self, src_entity_id: int, edge_type: str | None = None) -> list[EdgeRow]:
+        stmt = select(m.Edge).where(m.Edge.src_entity_id == src_entity_id)
+        if edge_type:
+            stmt = stmt.where(m.Edge.edge_type == edge_type)
+        return [self._dto(r) for r in self.s.scalars(stmt).all()]
+
+    def in_edges(self, dst_entity_id: int, edge_type: str | None = None) -> list[EdgeRow]:
+        stmt = select(m.Edge).where(m.Edge.dst_entity_id == dst_entity_id)
+        if edge_type:
+            stmt = stmt.where(m.Edge.edge_type == edge_type)
+        return [self._dto(r) for r in self.s.scalars(stmt).all()]
 
 
 class SqlTransitionRepo:

@@ -14,11 +14,13 @@ from dataclasses import dataclass, field
 from core.logging import get_logger
 from entities import ResolutionEngine
 from extraction import CandidateRecord
+from graph import GraphBuilder
 from opportunities import EvaluateResult, OpportunityEngine
 from storage.repositories import (
     EntityRepository,
     EvidenceRepository,
     InMemoryBlockingRepo,
+    InMemoryEdgeRepo,
     InMemoryMergeRepo,
     InMemoryObservationRepo,
     InMemoryReviewRepo,
@@ -34,6 +36,7 @@ log = get_logger("pipeline.m0")
 @dataclass
 class PipelineResult:
     companies: int = 0
+    people: int = 0
     signals: int = 0
     opportunities: list = field(default_factory=list)
     transitions: list = field(default_factory=list)
@@ -53,6 +56,7 @@ class M0Pipeline:
         merges: InMemoryMergeRepo | None = None,
         timeline: InMemoryTimelineRepo | None = None,
         transitions: InMemoryTransitionRepo | None = None,
+        edges: InMemoryEdgeRepo | None = None,
     ):
         self._entities = entities
         self._evidence = evidence
@@ -60,6 +64,8 @@ class M0Pipeline:
         self._opps = opportunities
         self._timeline = timeline or InMemoryTimelineRepo()
         self._transitions = transitions or InMemoryTransitionRepo()
+        self._edges = edges or InMemoryEdgeRepo()
+        self._graph = GraphBuilder(self._edges)
         # ER state must persist across ingests to dedupe, so callers that reuse
         # a pipeline (the API) pass shared repos; standalone runs get fresh ones.
         self._resolver = ResolutionEngine(
@@ -70,7 +76,7 @@ class M0Pipeline:
             reviews=reviews or InMemoryReviewRepo(),
             merges=merges or InMemoryMergeRepo(),
         )
-        self._engine = OpportunityEngine(entities, signals, opportunities)
+        self._engine = OpportunityEngine(entities, signals, opportunities, edges=self._edges)
 
     def ingest(self, candidates: list[CandidateRecord], content_hash: str = "") -> PipelineResult:
         result = PipelineResult()
@@ -86,6 +92,26 @@ class M0Pipeline:
                     apex_to_entity[apex] = res.entity_id
                 result.companies += 1
                 touched.add(res.entity_id)
+
+        # Pass 1b: resolve people and connect them to their company (works_at edge
+        # with relationship evidence — the requirement that unlocks Gold).
+        for cand in candidates:
+            if not (cand.kind == "entity" and cand.entity_type == "person"):
+                continue
+            apex = cand.attributes.get("company_apex") or cand.attributes.get("company_domain")
+            company_id = apex_to_entity.get(apex) if apex else None
+            if company_id is None and apex:
+                found = self._entities.find_by_canonical("company", apex)
+                company_id = found.id if found else None
+            res = self._resolver.resolve_person(cand, content_hash or cand.evidence.url)
+            if company_id is not None:
+                self._graph.works_at(
+                    person_id=res.entity_id, company_id=company_id,
+                    role=cand.attributes.get("current_role"),
+                    evidence_ids=[res.evidence_id],
+                )
+                touched.add(company_id)
+            result.people += 1
 
         # Pass 2: attach signals to their company.
         for cand in candidates:
