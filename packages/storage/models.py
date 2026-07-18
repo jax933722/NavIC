@@ -223,6 +223,18 @@ class OpportunityTransition(Base):
     opportunity: Mapped[Opportunity] = relationship(back_populates="transitions")
 
 
+class TimelineEvent(Base):
+    __tablename__ = "timeline_event"
+    __table_args__ = (Index("timeline_company_idx", "company_entity_id", "occurred_at"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    company_entity_id: Mapped[int] = mapped_column(ForeignKey("entity.id"))
+    event_type: Mapped[str] = mapped_column(String)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    signal_id: Mapped[int | None] = mapped_column(ForeignKey("signal.id"), nullable=True)
+    evidence_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), default=list)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Score(Base):
     __tablename__ = "score"
     subject_kind: Mapped[str] = mapped_column(String, primary_key=True)
@@ -288,4 +300,5 @@ __all__ = [
     "BlockingKey",
     "ResolutionReview",
     "EntityMerge",
+    "TimelineEvent",
 ]

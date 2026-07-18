@@ -1,0 +1,8 @@
+id: scaling_gtm
+thesis: Scaling go-to-market after funding
+intent_axis: outbound
+requires_any_signals: [funding_raised, hiring, product_launch]
+min_signals: 2
+suggested_department: Sales
+suggested_decision_maker_role: [VP Sales, Head of RevOps]
+base_intent_weight: 0.65

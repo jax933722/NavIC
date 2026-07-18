@@ -1,0 +1,9 @@
+id: crm_in_market
+thesis: In-market for CRM
+intent_axis: crm
+requires_any_signals: [funding_raised, hiring, pain_mention]
+require_intent_axis: [crm, outbound]
+min_signals: 2
+suggested_department: Sales
+suggested_decision_maker_role: [VP Sales, Head of RevOps, Head of Growth]
+base_intent_weight: 0.8

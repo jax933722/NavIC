@@ -24,6 +24,8 @@ from storage.sql_repositories import (
     SqlOpportunityRepo,
     SqlReviewRepo,
     SqlSignalRepo,
+    SqlTimelineRepo,
+    SqlTransitionRepo,
 )
 
 HOMEPAGE = """
@@ -44,6 +46,8 @@ def _pipeline(session):
         observations=SqlObservationRepo(session),
         reviews=SqlReviewRepo(session),
         merges=SqlMergeRepo(session),
+        timeline=SqlTimelineRepo(session),
+        transitions=SqlTransitionRepo(session),
     )
 
 

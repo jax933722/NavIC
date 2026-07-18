@@ -29,6 +29,8 @@ from .schemas import (
     Page,
     SeedRequest,
     SeedResponse,
+    TimelineEventOut,
+    TransitionOut,
 )
 from .state import AppState, new_state
 
@@ -122,6 +124,10 @@ def get_company(company_id: int) -> CompanyDetail:
     if ent is None or ent.entity_type != "company":
         raise HTTPException(status_code=404, detail="company not found")
     opps = [o for o in state.opportunities.list() if o.company_entity_id == company_id]
+    timeline = [
+        TimelineEventOut(event_type=e.event_type, summary=e.summary, occurred_at=e.occurred_at)
+        for e in state.timeline.for_company(company_id)
+    ]
     return CompanyDetail(
         id=ent.id,
         name=ent.display_name or ent.attributes.get("name"),
@@ -129,7 +135,19 @@ def get_company(company_id: int) -> CompanyDetail:
         attributes=ent.attributes,
         signals=len(state.signals.for_company(company_id)),
         opportunities=[_card(state, o) for o in opps],
+        timeline=timeline,
     )
+
+
+@app.get("/v1/opportunities/{opportunity_id}/transitions", response_model=list[TransitionOut])
+def opportunity_transitions(opportunity_id: int) -> list[TransitionOut]:
+    state = _state()
+    rows = state.transitions.for_opportunity(opportunity_id)
+    return [
+        TransitionOut(from_tier=r.from_tier, to_tier=r.to_tier, reason=r.reason,
+                      score_delta=r.score_delta, created_at=r.created_at)
+        for r in rows
+    ]
 
 
 @app.get("/v1/evidence/{evidence_id}", response_model=EvidenceRef)

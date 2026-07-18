@@ -21,6 +21,8 @@ from .repositories import (
     OpportunityRow,
     ReviewRow,
     SignalRow,
+    TimelineEventRow,
+    TransitionRow,
 )
 
 
@@ -124,13 +126,28 @@ class SqlSignalRepo:
 
     def add(self, *, company_entity_id, signal_type, strength, intent_axis, evidence_ids,
             attributes) -> SignalRow:
-        row = m.Signal(company_entity_id=company_entity_id, signal_type=signal_type,
-                       strength=strength, intent_axis=intent_axis, evidence_ids=evidence_ids,
-                       attributes=attributes)
-        self.s.add(row)
+        # Idempotent per (company, type, axis) — re-crawl refreshes, never duplicates.
+        row = self.s.scalar(
+            select(m.Signal).where(
+                m.Signal.company_entity_id == company_entity_id,
+                m.Signal.signal_type == signal_type,
+                m.Signal.intent_axis.is_(intent_axis) if intent_axis is None
+                else m.Signal.intent_axis == intent_axis,
+            )
+        )
+        if row:
+            row.strength = max(row.strength, strength)
+            row.evidence_ids = sorted(set(row.evidence_ids or []) | set(evidence_ids))
+            row.attributes = attributes
+            row.detected_at = datetime.now(UTC)
+        else:
+            row = m.Signal(company_entity_id=company_entity_id, signal_type=signal_type,
+                           strength=strength, intent_axis=intent_axis,
+                           evidence_ids=list(evidence_ids), attributes=attributes)
+            self.s.add(row)
         self.s.flush()
         return SignalRow(row.id, company_entity_id, signal_type, strength, intent_axis,
-                         list(evidence_ids), row.detected_at, attributes)
+                         list(row.evidence_ids or []), row.detected_at, attributes)
 
     def for_company(self, company_entity_id: int) -> list[SignalRow]:
         rows = self.s.scalars(
@@ -195,6 +212,55 @@ class SqlOpportunityRepo:
     def get(self, opportunity_id: int) -> OpportunityRow | None:
         r = self.s.get(m.Opportunity, opportunity_id)
         return self._to_dto(r) if r else None
+
+
+class SqlTransitionRepo:
+    def __init__(self, session: Session):
+        self.s = session
+
+    def add(self, opportunity_id, from_tier, to_tier, reason, score_delta) -> TransitionRow:
+        row = m.OpportunityTransition(
+            opportunity_id=opportunity_id, from_tier=from_tier, to_tier=to_tier,
+            reason=reason, score_delta=score_delta,
+        )
+        self.s.add(row)
+        self.s.flush()
+        return TransitionRow(row.id, opportunity_id, from_tier, to_tier, reason, score_delta,
+                             row.created_at)
+
+    def for_opportunity(self, opportunity_id: int) -> list[TransitionRow]:
+        rows = self.s.scalars(
+            select(m.OpportunityTransition)
+            .where(m.OpportunityTransition.opportunity_id == opportunity_id)
+            .order_by(m.OpportunityTransition.created_at)
+        ).all()
+        return [TransitionRow(r.id, r.opportunity_id, r.from_tier, r.to_tier, r.reason,
+                              r.score_delta, r.created_at) for r in rows]
+
+
+class SqlTimelineRepo:
+    def __init__(self, session: Session):
+        self.s = session
+
+    def add(self, *, company_entity_id, event_type, summary, signal_id, evidence_ids,
+            occurred_at=None) -> TimelineEventRow:
+        row = m.TimelineEvent(
+            company_entity_id=company_entity_id, event_type=event_type, summary=summary,
+            signal_id=signal_id, evidence_ids=list(evidence_ids),
+        )
+        self.s.add(row)
+        self.s.flush()
+        return TimelineEventRow(row.id, company_entity_id, event_type, summary, signal_id,
+                                list(evidence_ids), row.occurred_at)
+
+    def for_company(self, company_entity_id: int) -> list[TimelineEventRow]:
+        rows = self.s.scalars(
+            select(m.TimelineEvent)
+            .where(m.TimelineEvent.company_entity_id == company_entity_id)
+            .order_by(m.TimelineEvent.occurred_at)
+        ).all()
+        return [TimelineEventRow(r.id, r.company_entity_id, r.event_type, r.summary, r.signal_id,
+                                 list(r.evidence_ids or []), r.occurred_at) for r in rows]
 
 
 class SqlBlockingRepo:

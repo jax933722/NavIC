@@ -1,0 +1,9 @@
+id: deliverability_pain
+thesis: Email deliverability pain
+intent_axis: deliverability
+requires_any_signals: [pain_mention, hiring]
+require_intent_axis: [deliverability]
+min_signals: 1
+suggested_department: Marketing
+suggested_decision_maker_role: [Head of Growth, VP Marketing, Email Marketing Lead]
+base_intent_weight: 0.7

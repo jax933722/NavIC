@@ -20,6 +20,8 @@ from storage.repositories import (
     InMemoryOpportunityRepo,
     InMemoryReviewRepo,
     InMemorySignalRepo,
+    InMemoryTimelineRepo,
+    InMemoryTransitionRepo,
 )
 
 
@@ -33,10 +35,12 @@ class AppState:
     observations: InMemoryObservationRepo
     reviews: InMemoryReviewRepo
     merges: InMemoryMergeRepo
+    timeline: InMemoryTimelineRepo
+    transitions: InMemoryTransitionRepo
 
     @property
     def pipeline(self) -> M0Pipeline:
-        # Shared ER repos so resolution dedupes across requests.
+        # Shared repos so resolution/timeline/transitions accumulate across requests.
         return M0Pipeline(
             entities=self.entities,
             evidence=self.evidence,
@@ -46,6 +50,8 @@ class AppState:
             observations=self.observations,
             reviews=self.reviews,
             merges=self.merges,
+            timeline=self.timeline,
+            transitions=self.transitions,
         )
 
 
@@ -59,4 +65,6 @@ def new_state() -> AppState:
         observations=InMemoryObservationRepo(),
         reviews=InMemoryReviewRepo(),
         merges=InMemoryMergeRepo(),
+        timeline=InMemoryTimelineRepo(),
+        transitions=InMemoryTransitionRepo(),
     )

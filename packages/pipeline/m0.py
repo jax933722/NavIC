@@ -22,6 +22,8 @@ from storage.repositories import (
     InMemoryMergeRepo,
     InMemoryObservationRepo,
     InMemoryReviewRepo,
+    InMemoryTimelineRepo,
+    InMemoryTransitionRepo,
     OpportunityRepository,
     SignalRepository,
 )
@@ -49,11 +51,15 @@ class M0Pipeline:
         observations: InMemoryObservationRepo | None = None,
         reviews: InMemoryReviewRepo | None = None,
         merges: InMemoryMergeRepo | None = None,
+        timeline: InMemoryTimelineRepo | None = None,
+        transitions: InMemoryTransitionRepo | None = None,
     ):
         self._entities = entities
         self._evidence = evidence
         self._signals = signals
         self._opps = opportunities
+        self._timeline = timeline or InMemoryTimelineRepo()
+        self._transitions = transitions or InMemoryTransitionRepo()
         # ER state must persist across ingests to dedupe, so callers that reuse
         # a pipeline (the API) pass shared repos; standalone runs get fresh ones.
         self._resolver = ResolutionEngine(
@@ -100,7 +106,7 @@ class M0Pipeline:
                 confidence=cand.evidence.confidence,
                 content_hash=content_hash or cand.evidence.url,
             )
-            self._signals.add(
+            sig = self._signals.add(
                 company_entity_id=entity_id,
                 signal_type=cand.signal_type or "other",
                 strength=float(cand.attributes.get("strength", 0.4)),
@@ -108,12 +114,25 @@ class M0Pipeline:
                 evidence_ids=[ev.id],
                 attributes=cand.attributes,
             )
+            # Append to the company's timeline (spec 05 §2).
+            self._timeline.add(
+                company_entity_id=entity_id,
+                event_type=cand.signal_type or "signal",
+                summary=cand.evidence.snippet,
+                signal_id=sig.id,
+                evidence_ids=[ev.id],
+            )
             result.signals += 1
             touched.add(entity_id)
 
-        # Pass 3: (re)generate opportunities for every touched company.
+        # Pass 3: (re)generate opportunities for every touched company; persist transitions.
         for entity_id in touched:
             evaluated: EvaluateResult = self._engine.evaluate(entity_id)
             result.opportunities.extend(evaluated.opportunities)
+            for t in evaluated.transitions:
+                self._transitions.add(
+                    opportunity_id=t.opportunity_id, from_tier=t.from_tier,
+                    to_tier=t.to_tier, reason=t.reason, score_delta=t.score_delta,
+                )
             result.transitions.extend(evaluated.transitions)
         return result

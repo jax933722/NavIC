@@ -1,9 +1,12 @@
-"""Opportunity engine — M0 assembly + tiering + promotion ledger (spec 05 §3–§5).
+"""Opportunity engine — multi-template assembly, tiering, promotion (spec 05 §3-§5).
 
-M0 ships one template ("hiring_activity"): a company with a domain and a weak
-hiring signal yields a Bronze opportunity. The engine regenerates opportunities
-on every touch, classifies the tier, records tier transitions, and scores.
-Additional templates and the full flywheel arrive in M2.
+For each company touched by a signal, the engine regenerates opportunities from
+the declarative templates, classifies each Gold/Silver/Bronze, records tier
+transitions, and scores. A satisfied template with a qualifying signal yields a
+Silver opportunity (person unknown) with an inferred department + decision-maker
+role; companies with only weak/early signal get a Bronze "early_signal". Gold is
+produced in M4 when a person in the right role is resolved with relationship
+evidence.
 """
 
 from __future__ import annotations
@@ -25,29 +28,27 @@ from storage.repositories import (
     SignalRepository,
 )
 
+from .taxonomy_bridge import decision_maker_for
+from .templates_loader import Template, load_templates
 from .tiering import OpportunityPresence, Tier, classify
+
+_BRONZE_TEMPLATE_ID = "early_signal"
 
 
 @dataclass
 class Transition:
     company_entity_id: int
+    opportunity_id: int
     from_tier: str | None
     to_tier: str
     reason: str
+    score_delta: float
 
 
 @dataclass
 class EvaluateResult:
     opportunities: list[OpportunityRow] = field(default_factory=list)
     transitions: list[Transition] = field(default_factory=list)
-
-
-# Minimal template catalog for M0 (declarative motifs arrive as YAML in M2).
-_M0_TEMPLATE = {
-    "id": "hiring_activity",
-    "thesis": "Active hiring — early buying signal",
-    "intent_axis": "hiring",
-}
 
 
 class OpportunityEngine:
@@ -64,66 +65,107 @@ class OpportunityEngine:
     def evaluate(self, company_entity_id: int) -> EvaluateResult:
         result = EvaluateResult()
         company = self._entities.get(company_entity_id)
-        if company is None:
+        if company is None or not company.attributes.get("primary_domain"):
             return result
-        has_domain = bool(company.attributes.get("primary_domain"))
         company_signals = self._signals.for_company(company_entity_id)
-        if not (has_domain and company_signals):
+        if not company_signals:
             return result
 
-        template = _M0_TEMPLATE
-        weak = any(s.attributes.get("weak") for s in company_signals)
+        matched_any = False
+        for template in load_templates():
+            matching = _matching_signals(template, company_signals)
+            if _satisfies(template, matching):
+                matched_any = True
+                self._emit(result, company_entity_id, template, matching, tier=Tier.SILVER)
+
+        if not matched_any:
+            # No template satisfied, but signals exist -> Bronze early signal.
+            self._emit_bronze(result, company_entity_id, company_signals)
+        return result
+
+    def _emit(self, result, company_id, template: Template, matching, tier: Tier) -> None:
+        department = _best_department(matching, template.suggested_department)
+        dm_role = decision_maker_for(department, template.suggested_decision_maker_role)
         presence = OpportunityPresence(
-            company=True,
-            domain=has_domain,
-            buying_signal=not weak,
-            weak_signal=weak,
+            company=True, domain=True, buying_signal=True,
+            suggested_department=bool(department), suggested_role=bool(dm_role),
         )
-        tier = classify(presence)
-        if tier is Tier.UNQUALIFIED:
-            return result
-
-        score = self._score(tier, company_signals)
-        prior = self._opps.find(company_entity_id, template["id"])
+        final_tier = classify(presence)
+        score = self._score(final_tier, matching)
+        prior = self._opps.find(company_id, template.id)
         row = OpportunityRow(
-            id=0,
-            company_entity_id=company_entity_id,
-            tier=tier.value,
-            template_id=template["id"],
-            thesis=template["thesis"],
-            opportunity_score=score,
-            primary_signal_id=company_signals[0].id,
-            evidence_ids=[eid for s in company_signals for eid in s.evidence_ids],
+            id=0, company_entity_id=company_id, tier=final_tier.value, template_id=template.id,
+            thesis=template.thesis, opportunity_score=score,
+            department=department, decision_maker_role=dm_role,
+            primary_signal_id=matching[0].id,
+            evidence_ids=[e for s in matching for e in s.evidence_ids],
         )
+        self._save(result, company_id, row, prior)
+
+    def _emit_bronze(self, result, company_id, signals) -> None:
+        presence = OpportunityPresence(company=True, domain=True, weak_signal=True)
+        tier = classify(presence)
+        score = self._score(tier, signals)
+        prior = self._opps.find(company_id, _BRONZE_TEMPLATE_ID)
+        row = OpportunityRow(
+            id=0, company_entity_id=company_id, tier=tier.value, template_id=_BRONZE_TEMPLATE_ID,
+            thesis="Early buying signal", opportunity_score=score,
+            primary_signal_id=signals[0].id,
+            evidence_ids=[e for s in signals for e in s.evidence_ids],
+        )
+        self._save(result, company_id, row, prior)
+
+    def _save(self, result, company_id, row, prior) -> None:
         saved = self._opps.upsert(row)
         result.opportunities.append(saved)
-
         prior_tier = prior.tier if prior else None
         if prior_tier != saved.tier:
+            prior_score = prior.opportunity_score if prior else 0.0
             result.transitions.append(
                 Transition(
-                    company_entity_id=company_entity_id,
-                    from_tier=prior_tier,
-                    to_tier=saved.tier,
-                    reason=f"template {template['id']} matched; tier={saved.tier}",
+                    company_entity_id=company_id, opportunity_id=saved.id,
+                    from_tier=prior_tier, to_tier=saved.tier,
+                    reason=f"template {saved.template_id} -> {saved.tier}",
+                    score_delta=round(saved.opportunity_score - prior_score, 4),
                 )
             )
-        return result
 
     def _score(self, tier: Tier, signals) -> float:
         now = datetime.now(UTC)
         sig_inputs = [
-            SignalInput(
-                signal_type=s.signal_type,
-                strength=s.strength,
-                intent_weight=0.7,
-                detected_at=s.detected_at,
-            )
+            SignalInput(signal_type=s.signal_type, strength=s.strength,
+                        intent_weight=0.7, detected_at=s.detected_at)
             for s in signals
         ]
         bi = buying_intent(sig_inputs, now)
         fr = freshness(sig_inputs, now)
-        es = evidence_score([0.5 for s in signals], distinct_source_domains=1)
-        return opportunity_score(
-            tier=tier, buying_intent_v=bi, evidence_v=es, freshness_v=fr
-        )
+        es = evidence_score([0.6] * len(signals), distinct_source_domains=1)
+        return opportunity_score(tier=tier, buying_intent_v=bi, evidence_v=es, freshness_v=fr)
+
+
+def _matching_signals(template: Template, signals) -> list:
+    """Signals whose type is one the template requires."""
+    if not template.requires_any_signals:
+        return list(signals)
+    return [s for s in signals if s.signal_type in template.requires_any_signals]
+
+
+def _satisfies(template: Template, matching: list) -> bool:
+    if len(matching) < template.min_signals:
+        return False
+    if not any(not s.attributes.get("weak") for s in matching):
+        return False  # need at least one qualifying (non-weak) signal
+    # Gate: at least one type-matched signal must touch a required intent axis.
+    if template.require_intent_axis and not any(
+        s.intent_axis in template.require_intent_axis for s in matching
+    ):
+        return False
+    return True
+
+
+def _best_department(signals, fallback: str) -> str:
+    for s in signals:
+        dept = s.attributes.get("department")
+        if dept:
+            return dept
+    return fallback

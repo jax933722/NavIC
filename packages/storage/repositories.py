@@ -178,16 +178,29 @@ class InMemoryEntityRepo:
 class InMemorySignalRepo:
     def __init__(self) -> None:
         self._rows: dict[int, SignalRow] = {}
+        self._by_key: dict[tuple[int, str, str | None], int] = {}
         self._ids = count(1)
 
     def add(self, *, company_entity_id, signal_type, strength, intent_axis, evidence_ids,
             attributes) -> SignalRow:
+        # Idempotent per (company, type, axis): a re-crawl refreshes, never
+        # duplicates. Distinct axes remain distinct signals.
+        key = (company_entity_id, signal_type, intent_axis)
+        existing_id = self._by_key.get(key)
+        if existing_id:
+            row = self._rows[existing_id]
+            row.strength = max(row.strength, strength)
+            row.evidence_ids = sorted(set(row.evidence_ids) | set(evidence_ids))
+            row.detected_at = datetime.now(UTC)
+            row.attributes = attributes
+            return row
         row = SignalRow(
             id=next(self._ids), company_entity_id=company_entity_id, signal_type=signal_type,
-            strength=strength, intent_axis=intent_axis, evidence_ids=evidence_ids,
+            strength=strength, intent_axis=intent_axis, evidence_ids=list(evidence_ids),
             attributes=attributes, detected_at=datetime.now(UTC),
         )
         self._rows[row.id] = row
+        self._by_key[key] = row.id
         return row
 
     def for_company(self, company_entity_id: int) -> list[SignalRow]:
@@ -224,6 +237,69 @@ class InMemoryOpportunityRepo:
 
     def get(self, opportunity_id: int) -> OpportunityRow | None:
         return self._rows.get(opportunity_id)
+
+
+@dataclass
+class TransitionRow:
+    id: int
+    opportunity_id: int
+    from_tier: str | None
+    to_tier: str
+    reason: str | None
+    score_delta: float | None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass
+class TimelineEventRow:
+    id: int
+    company_entity_id: int
+    event_type: str
+    summary: str | None
+    signal_id: int | None
+    evidence_ids: list[int]
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+class InMemoryTransitionRepo:
+    def __init__(self) -> None:
+        self._rows: dict[int, TransitionRow] = {}
+        self._ids = count(1)
+
+    def add(self, opportunity_id, from_tier, to_tier, reason, score_delta) -> TransitionRow:
+        row = TransitionRow(id=next(self._ids), opportunity_id=opportunity_id,
+                            from_tier=from_tier, to_tier=to_tier, reason=reason,
+                            score_delta=score_delta)
+        self._rows[row.id] = row
+        return row
+
+    def for_opportunity(self, opportunity_id: int) -> list[TransitionRow]:
+        return sorted(
+            (r for r in self._rows.values() if r.opportunity_id == opportunity_id),
+            key=lambda r: r.created_at,
+        )
+
+
+class InMemoryTimelineRepo:
+    def __init__(self) -> None:
+        self._rows: dict[int, TimelineEventRow] = {}
+        self._ids = count(1)
+
+    def add(self, *, company_entity_id, event_type, summary, signal_id, evidence_ids,
+            occurred_at=None) -> TimelineEventRow:
+        row = TimelineEventRow(
+            id=next(self._ids), company_entity_id=company_entity_id, event_type=event_type,
+            summary=summary, signal_id=signal_id, evidence_ids=list(evidence_ids),
+            occurred_at=occurred_at or datetime.now(UTC),
+        )
+        self._rows[row.id] = row
+        return row
+
+    def for_company(self, company_entity_id: int) -> list[TimelineEventRow]:
+        return sorted(
+            (r for r in self._rows.values() if r.company_entity_id == company_entity_id),
+            key=lambda r: r.occurred_at,
+        )
 
 
 # ------------------------------------------------------------------ ER repositories (M1)

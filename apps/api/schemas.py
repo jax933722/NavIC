@@ -46,6 +46,20 @@ class OpportunityList(BaseModel):
     page: Page
 
 
+class TransitionOut(BaseModel):
+    from_tier: str | None
+    to_tier: str
+    reason: str | None
+    score_delta: float | None
+    created_at: datetime
+
+
+class TimelineEventOut(BaseModel):
+    event_type: str
+    summary: str | None
+    occurred_at: datetime
+
+
 class CompanyDetail(BaseModel):
     id: int
     name: str | None
@@ -53,6 +67,7 @@ class CompanyDetail(BaseModel):
     attributes: dict
     signals: int
     opportunities: list[OpportunityCard]
+    timeline: list[TimelineEventOut]
 
 
 class SeedRequest(BaseModel):
