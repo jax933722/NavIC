@@ -65,6 +65,21 @@ cd apps/dashboard && pnpm install && pnpm dev           # the board at :3000
 **Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
 `packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
 
+### M2 + M4 — Signals, Opportunities, and Gold (complete)
+
+- **Signal classifiers** (`packages/signals`): funding, hiring (with department inference), tech
+  adoption/churn, pain mentions (mapped to intent axes), product launch — every signal evidence-backed.
+- **Multi-template opportunity engine** (`packages/opportunities`): declarative YAML templates,
+  Silver decision-maker inference, per-company **timeline**, and a persisted **promotion ledger**
+  (Bronze → Silver → Gold transitions).
+- **Knowledge-graph edges** (`packages/graph`): typed, evidence-backed `works_at` edges (person → company).
+- **Person extraction + resolution** (`packages/extraction`, `packages/entities`): people pulled from
+  team/about pages (JSON-LD + text patterns), resolved context-first, linked to their company.
+- **Gold generation**: a resolved leadership person connected via a `works_at` edge upgrades a lead to
+  Gold (person + role + domain + relationship evidence + signal).
+- Verified live end-to-end: three crawled companies produced Gold (with a named decision maker),
+  Silver (with an inferred role), and Bronze — visible on the board with evidence.
+
 ### M1 — Evidence & Company ER (complete)
 
 - **Entity resolution engine** (`packages/entities`): blocking → weighted-logistic matching (with
