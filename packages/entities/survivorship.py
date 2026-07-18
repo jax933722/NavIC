@@ -49,8 +49,8 @@ def project(observations: list[Observation], now: datetime | None = None) -> dic
         trust = SOURCE_TRUST.get(obs.source_trust_tier, 0.3)
         fresh = _freshness(obs.observed_at, now)
         for fname, value in obs.field_values.items():
-            if value is None or value == "":
-                continue
+            if fname.startswith("__") or value is None or value == "":
+                continue  # skip internal/meta keys (e.g. stashed trust tier)
             bucket = fields.setdefault(fname, {})
             key = _hashable(value)
             entry = bucket.setdefault(

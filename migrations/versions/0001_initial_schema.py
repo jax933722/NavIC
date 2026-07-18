@@ -1,11 +1,15 @@
-"""Initial schema — core entity/evidence/graph/opportunity tables.
+"""Initial schema — full baseline.
 
-For this greenfield baseline the migration creates the full ORM metadata in one
-step (``Base.metadata.create_all``), keeping ``storage.models`` the single source
-of truth and avoiding drift. Subsequent migrations use granular ``op`` operations.
+Greenfield baseline: creates the entire current ORM schema in one revision from
+``storage.models`` (the single source of truth). This is the standard "squash to
+baseline" for a pre-release project with no deployed database.
 
-Deferred to follow-up hand-written migrations (not expressible in ORM metadata):
-  - monthly RANGE partitioning of evidence/raw_document/timeline_event/score_history
+Rule going forward: this is the ONLY migration that uses ``Base.metadata`` —
+every subsequent migration uses explicit ``op.*`` operations, so incremental
+changes never collide with the metadata's latest shape.
+
+Deferred to follow-up migrations (not expressible in ORM metadata):
+  - monthly RANGE partitioning of evidence/raw_document/timeline_event
   - Apache AGE graph bootstrap + pgvector / pg_trgm indexes
 (see docs/schema/schema.sql and spec 01 §6).
 

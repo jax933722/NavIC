@@ -200,6 +200,7 @@ class Opportunity(Base):
     decision_maker_role: Mapped[str | None] = mapped_column(String, nullable=True)
     primary_signal_id: Mapped[int | None] = mapped_column(ForeignKey("signal.id"), nullable=True)
     opportunity_score: Mapped[float] = mapped_column(Float, default=0.0)
+    evidence_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), default=list)
     status: Mapped[str] = mapped_column(String, default="open")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -232,6 +233,45 @@ class Score(Base):
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+# ---------------------------------------------------------------- entity resolution (M1)
+
+
+class BlockingKey(Base):
+    __tablename__ = "blocking_key"
+    __table_args__ = (
+        UniqueConstraint("entity_id", "key_type", "key_value", name="uq_blocking_key"),
+        Index("blocking_key_lookup", "key_type", "key_value"),
+    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entity.id"))
+    key_type: Mapped[str] = mapped_column(String)
+    key_value: Mapped[str] = mapped_column(String)
+
+
+class ResolutionReview(Base):
+    __tablename__ = "resolution_review"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    left_entity: Mapped[int] = mapped_column(ForeignKey("entity.id"))
+    right_entity: Mapped[int] = mapped_column(ForeignKey("entity.id"))
+    match_prob: Mapped[float] = mapped_column(Float)
+    features: Mapped[dict] = mapped_column(JSONB, default=dict)
+    decision: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EntityMerge(Base):
+    __tablename__ = "entity_merge"
+    __table_args__ = (Index("entity_merge_surv_idx", "surviving_entity_id"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    surviving_entity_id: Mapped[int] = mapped_column(ForeignKey("entity.id"))
+    merged_entity_id: Mapped[int] = mapped_column(BigInteger)
+    method: Mapped[str] = mapped_column(String)
+    confidence: Mapped[float] = mapped_column(Float)
+    features: Mapped[dict] = mapped_column(JSONB, default=dict)
+    reversible: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 __all__ = [
     "Source",
     "Collector",
@@ -245,4 +285,7 @@ __all__ = [
     "Opportunity",
     "OpportunityTransition",
     "Score",
+    "BlockingKey",
+    "ResolutionReview",
+    "EntityMerge",
 ]

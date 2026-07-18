@@ -65,6 +65,24 @@ cd apps/dashboard && pnpm install && pnpm dev           # the board at :3000
 **Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
 `packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
 
+### M1 — Evidence & Company ER (complete)
+
+- **Entity resolution engine** (`packages/entities`): blocking → weighted-logistic matching (with
+  hard rules) → deterministic survivorship → decision (auto-attach / review / create), with
+  merge audit and un-merge. Biased against over-merge (the #1 data-quality risk).
+- **ER F1 gate** (`tests/eval`): labeled company pairs + over-merge canaries; the build fails if
+  F1 < 0.85 or a canary crosses the auto-merge threshold.
+- **DB-backed persistence** (`packages/storage/sql_repositories.py`): SQLAlchemy repos implementing
+  the same protocols as the in-memory ones; the full pipeline persists to **PostgreSQL 16**,
+  verified by integration tests (crawl → resolve → survivorship → Bronze opportunity, re-crawl
+  enriches without duplicating). Alembic baseline migration is reversible (up/down/up verified).
+
+```bash
+# DB-backed integration tests (skip automatically if no DB is configured):
+export NAVIC_DATABASE_URL="postgresql+psycopg://navic@localhost:5432/navic"
+make migrate && make test
+```
+
 ### M0 — the spine (complete)
 
 The full slice runs end-to-end today: **a URL becomes a Bronze opportunity with evidence, visible on the board.**
