@@ -15,11 +15,10 @@ from extraction import CandidateRecord, EvidenceDraft, build_candidate
 from ingestion import RawResponse
 from normalization import apex_domain, normalize_company_name
 from parsing import ParsedDocument, parse_html
+from signals import classify_document
 
 from ..base import BaseCollector, Capabilities, CollectorContext, FetchTask
 from ..registry import register
-
-_HIRING_HINTS = ("careers", "/jobs", "we're hiring", "we are hiring", "join our team", "open roles")
 
 
 @register
@@ -66,32 +65,6 @@ class CompanyWebCollector(BaseCollector):
             )
         ]
 
-        signal = self._detect_hiring_signal(doc, apex)
-        if signal is not None:
-            candidates.append(signal)
+        # Full signal classification (funding, hiring+department, tech, pain, launch).
+        candidates.extend(classify_document(doc, apex))
         return candidates
-
-    def _detect_hiring_signal(self, doc: ParsedDocument, apex: str) -> CandidateRecord | None:
-        haystacks = [doc.text.lower()] + [
-            f"{link.href} {link.text}".lower() for link in doc.links
-        ]
-        matched = next((h for h in _HIRING_HINTS if any(h in hs for hs in haystacks)), None)
-        if matched is None:
-            return None
-        return build_candidate(
-            kind="signal",
-            signal_type="hiring",
-            attributes={
-                "company_domain": apex,
-                "strength": 0.4,
-                "intent_axis": "hiring",
-                "weak": True,
-            },
-            evidence=EvidenceDraft(
-                url=doc.url,
-                claim_type="signal.hiring",
-                snippet=f"Hiring hint on site: '{matched}'",
-                confidence=0.5,
-            ),
-            blocking_hints={"apex_domain": apex},
-        )
