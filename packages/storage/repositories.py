@@ -143,6 +143,37 @@ class InMemoryEntityRepo:
     def get(self, entity_id: int) -> EntityRow | None:
         return self._rows.get(entity_id)
 
+    # -- engine-oriented API (M1 resolution engine) --
+    def create_blank(self, entity_type: str) -> EntityRow:
+        row = EntityRow(
+            id=next(self._ids), entity_type=entity_type, canonical_key=None,
+            display_name=None, attributes={},
+        )
+        self._rows[row.id] = row
+        return row
+
+    def set_projection(
+        self, entity_id: int, canonical_key: str | None, display_name: str | None, attributes: dict
+    ) -> EntityRow:
+        row = self._rows[entity_id]
+        if canonical_key and row.canonical_key != canonical_key:
+            self._by_key[(row.entity_type, canonical_key)] = entity_id
+            row.canonical_key = canonical_key
+        row.display_name = display_name or row.display_name
+        row.attributes = attributes
+        row.last_seen_at = datetime.now(UTC)
+        row.version += 1
+        return row
+
+    def repoint(self, from_entity_id: int, to_entity_id: int) -> None:
+        """Re-point a merged entity's canonical keys to the survivor."""
+        row = self._rows.get(from_entity_id)
+        if row:
+            row.attributes = {**row.attributes, "merged_into": to_entity_id}
+            for key, eid in list(self._by_key.items()):
+                if eid == from_entity_id:
+                    self._by_key[key] = to_entity_id
+
 
 class InMemorySignalRepo:
     def __init__(self) -> None:
@@ -193,3 +224,112 @@ class InMemoryOpportunityRepo:
 
     def get(self, opportunity_id: int) -> OpportunityRow | None:
         return self._rows.get(opportunity_id)
+
+
+# ------------------------------------------------------------------ ER repositories (M1)
+@dataclass
+class ObservationRow:
+    id: int
+    entity_id: int
+    source_slug: str
+    source_trust_tier: str
+    external_id: str | None
+    raw_attributes: dict
+    evidence_id: int
+    match_prob: float | None
+    observed_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass
+class ReviewRow:
+    id: int
+    left_entity: int
+    right_entity: int
+    match_prob: float
+    features: dict
+    decision: str | None = None
+
+
+@dataclass
+class MergeRow:
+    id: int
+    surviving_entity_id: int
+    merged_entity_id: int
+    method: str
+    confidence: float
+    features: dict
+
+
+class InMemoryBlockingRepo:
+    """entity_id <-> blocking-key index (spec 04 §4)."""
+
+    def __init__(self) -> None:
+        self._by_key: dict[tuple[str, str], set[int]] = {}
+        self._by_entity: dict[int, set[tuple[str, str]]] = {}
+
+    def add(self, entity_id: int, key_type: str, key_value: str) -> None:
+        k = (key_type, key_value)
+        self._by_key.setdefault(k, set()).add(entity_id)
+        self._by_entity.setdefault(entity_id, set()).add(k)
+
+    def candidates(self, keys) -> set[int]:
+        out: set[int] = set()
+        for k in keys:
+            out |= self._by_key.get((k.key_type, k.key_value), set())
+        return out
+
+    def block_size(self, key_type: str, key_value: str) -> int:
+        return len(self._by_key.get((key_type, key_value), set()))
+
+
+class InMemoryObservationRepo:
+    def __init__(self) -> None:
+        self._rows: dict[int, ObservationRow] = {}
+        self._ids = count(1)
+
+    def add(self, **kw) -> ObservationRow:
+        row = ObservationRow(id=next(self._ids), **kw)
+        self._rows[row.id] = row
+        return row
+
+    def for_entity(self, entity_id: int) -> list[ObservationRow]:
+        return [r for r in self._rows.values() if r.entity_id == entity_id]
+
+    def repoint(self, from_entity_id: int, to_entity_id: int) -> None:
+        for r in self._rows.values():
+            if r.entity_id == from_entity_id:
+                r.entity_id = to_entity_id
+
+
+class InMemoryReviewRepo:
+    def __init__(self) -> None:
+        self._rows: dict[int, ReviewRow] = {}
+        self._ids = count(1)
+
+    def add(
+        self, left_entity: int, right_entity: int, match_prob: float, features: dict
+    ) -> ReviewRow:
+        row = ReviewRow(id=next(self._ids), left_entity=left_entity, right_entity=right_entity,
+                        match_prob=match_prob, features=features)
+        self._rows[row.id] = row
+        return row
+
+    def pending(self) -> list[ReviewRow]:
+        return [r for r in self._rows.values() if r.decision is None]
+
+    def get(self, review_id: int) -> ReviewRow | None:
+        return self._rows.get(review_id)
+
+
+class InMemoryMergeRepo:
+    def __init__(self) -> None:
+        self._rows: dict[int, MergeRow] = {}
+        self._ids = count(1)
+
+    def add(self, **kw) -> MergeRow:
+        row = MergeRow(id=next(self._ids), **kw)
+        self._rows[row.id] = row
+        return row
+
+    def all(self) -> list[MergeRow]:
+        return list(self._rows.values())

@@ -12,9 +12,13 @@ from dataclasses import dataclass
 
 from pipeline import M0Pipeline
 from storage.repositories import (
+    InMemoryBlockingRepo,
     InMemoryEntityRepo,
     InMemoryEvidenceRepo,
+    InMemoryMergeRepo,
+    InMemoryObservationRepo,
     InMemoryOpportunityRepo,
+    InMemoryReviewRepo,
     InMemorySignalRepo,
 )
 
@@ -25,14 +29,23 @@ class AppState:
     evidence: InMemoryEvidenceRepo
     signals: InMemorySignalRepo
     opportunities: InMemoryOpportunityRepo
+    blocking: InMemoryBlockingRepo
+    observations: InMemoryObservationRepo
+    reviews: InMemoryReviewRepo
+    merges: InMemoryMergeRepo
 
     @property
     def pipeline(self) -> M0Pipeline:
+        # Shared ER repos so resolution dedupes across requests.
         return M0Pipeline(
             entities=self.entities,
             evidence=self.evidence,
             signals=self.signals,
             opportunities=self.opportunities,
+            blocking=self.blocking,
+            observations=self.observations,
+            reviews=self.reviews,
+            merges=self.merges,
         )
 
 
@@ -42,4 +55,8 @@ def new_state() -> AppState:
         evidence=InMemoryEvidenceRepo(),
         signals=InMemorySignalRepo(),
         opportunities=InMemoryOpportunityRepo(),
+        blocking=InMemoryBlockingRepo(),
+        observations=InMemoryObservationRepo(),
+        reviews=InMemoryReviewRepo(),
+        merges=InMemoryMergeRepo(),
     )

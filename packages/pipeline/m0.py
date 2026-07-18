@@ -12,12 +12,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from core.logging import get_logger
-from entities import DomainExactResolver
+from entities import ResolutionEngine
 from extraction import CandidateRecord
 from opportunities import EvaluateResult, OpportunityEngine
 from storage.repositories import (
     EntityRepository,
     EvidenceRepository,
+    InMemoryBlockingRepo,
+    InMemoryMergeRepo,
+    InMemoryObservationRepo,
+    InMemoryReviewRepo,
     OpportunityRepository,
     SignalRepository,
 )
@@ -41,12 +45,25 @@ class M0Pipeline:
         evidence: EvidenceRepository,
         signals: SignalRepository,
         opportunities: OpportunityRepository,
+        blocking: InMemoryBlockingRepo | None = None,
+        observations: InMemoryObservationRepo | None = None,
+        reviews: InMemoryReviewRepo | None = None,
+        merges: InMemoryMergeRepo | None = None,
     ):
         self._entities = entities
         self._evidence = evidence
         self._signals = signals
         self._opps = opportunities
-        self._resolver = DomainExactResolver(entities, evidence)
+        # ER state must persist across ingests to dedupe, so callers that reuse
+        # a pipeline (the API) pass shared repos; standalone runs get fresh ones.
+        self._resolver = ResolutionEngine(
+            entities=entities,
+            evidence=evidence,
+            observations=observations or InMemoryObservationRepo(),
+            blocking=blocking or InMemoryBlockingRepo(),
+            reviews=reviews or InMemoryReviewRepo(),
+            merges=merges or InMemoryMergeRepo(),
+        )
         self._engine = OpportunityEngine(entities, signals, opportunities)
 
     def ingest(self, candidates: list[CandidateRecord], content_hash: str = "") -> PipelineResult:
@@ -60,9 +77,9 @@ class M0Pipeline:
                 res = self._resolver.resolve_company(cand, content_hash or cand.evidence.url)
                 apex = cand.attributes.get("primary_domain")
                 if apex:
-                    apex_to_entity[apex] = res.entity.id
+                    apex_to_entity[apex] = res.entity_id
                 result.companies += 1
-                touched.add(res.entity.id)
+                touched.add(res.entity_id)
 
         # Pass 2: attach signals to their company.
         for cand in candidates:
