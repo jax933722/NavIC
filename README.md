@@ -43,3 +43,30 @@ Ten implementation-ready specs expanding the blueprint:
 
 > Status: **Baseline v1.0 — implementation-ready blueprint.** Single-operator, single-tenant, no
 > auth/billing by design — but built so multi-tenancy is an additive migration, not a rewrite.
+
+## Development
+
+Implementation has begun on **M0 (the spine)** — see [`docs/specs/08-development-roadmap.md`](./docs/specs/08-development-roadmap.md).
+
+```bash
+make install     # create venv, install project + dev deps (uv)
+make check       # lint (ruff) + tests (pytest)  ← the CI fast gate
+make up          # start local infra: Postgres+AGE, Redis, MinIO, OpenSearch
+make migrate     # apply Alembic migrations to head
+```
+
+**Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
+`packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
+
+What's built so far (M0, in progress):
+
+| Area | Package | Status |
+|---|---|---|
+| Config, IDs, errors, structured logging, event bus (in-memory adapter) | `packages/core` | ✅ tested |
+| Deterministic normalization (company name, domain apex) | `packages/normalization` | ✅ property-tested |
+| Evidence + candidate models (enforces *no claim without evidence*) | `packages/extraction` | ✅ tested |
+| Gold/Silver/Bronze tiering gate | `packages/opportunities` | ✅ tested |
+| Multi-score vector (buying intent, freshness, evidence, opportunity score) | `packages/scoring` | ✅ tested |
+| ORM models + Alembic initial migration | `packages/storage`, `migrations/` | ✅ import-verified |
+
+`43 unit/property tests passing.` Run `make test` to verify.
