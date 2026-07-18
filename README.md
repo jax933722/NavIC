@@ -53,20 +53,39 @@ make install     # create venv, install project + dev deps (uv)
 make check       # lint (ruff) + tests (pytest)  ← the CI fast gate
 make up          # start local infra: Postgres+AGE, Redis, MinIO, OpenSearch
 make migrate     # apply Alembic migrations to head
+
+# Run the M0 slice end-to-end (no infra needed — in-memory repos):
+.venv/bin/uvicorn apps.api.main:app --port 8000        # the API
+python -m tools.cli.seed https://some-company.com      # crawl → pipeline → print opportunities
+curl -X POST localhost:8000/v1/admin/seed -d '{"urls":["https://some-company.com"]}' \
+     -H 'content-type: application/json'                # or seed via the API
+cd apps/dashboard && pnpm install && pnpm dev           # the board at :3000
 ```
 
 **Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
 `packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
 
-What's built so far (M0, in progress):
+### M0 — the spine (complete)
 
-| Area | Package | Status |
+The full slice runs end-to-end today: **a URL becomes a Bronze opportunity with evidence, visible on the board.**
+
+| Area | Package / app | Status |
 |---|---|---|
-| Config, IDs, errors, structured logging, event bus (in-memory adapter) | `packages/core` | ✅ tested |
-| Deterministic normalization (company name, domain apex) | `packages/normalization` | ✅ property-tested |
+| Config, IDs, errors, structured logging, event bus (in-memory + interface) | `packages/core` | ✅ tested |
+| Deterministic normalization (company name, domain apex, IP-safe) | `packages/normalization` | ✅ property-tested |
+| Raw store (immutable, content-addressed) + fetch client (retry/backoff) | `packages/ingestion` | ✅ tested |
+| HTML parser → ParsedDocument (title/text/links/meta/JSON-LD) | `packages/parsing` | ✅ tested |
+| Collector framework (contract, registry, runtime) + `company_web` collector | `packages/collectors` | ✅ tested |
 | Evidence + candidate models (enforces *no claim without evidence*) | `packages/extraction` | ✅ tested |
-| Gold/Silver/Bronze tiering gate | `packages/opportunities` | ✅ tested |
-| Multi-score vector (buying intent, freshness, evidence, opportunity score) | `packages/scoring` | ✅ tested |
-| ORM models + Alembic initial migration | `packages/storage`, `migrations/` | ✅ import-verified |
+| Domain-exact resolver (enrich, never replace) | `packages/entities` | ✅ tested |
+| Signals → Gold/Silver/Bronze tiering + opportunity engine + 8-score vector | `packages/opportunities`, `packages/scoring` | ✅ tested |
+| M0 pipeline: candidates → entities + signals → opportunities | `packages/pipeline` | ✅ e2e tested |
+| ORM models + Alembic migration | `packages/storage`, `migrations/` | ✅ import-verified |
+| REST API (`/opportunities`, `/companies`, `/evidence`, `/admin/seed`) | `apps/api` | ✅ tested (TestClient + live) |
+| Next.js dashboard board (tier filter + evidence chips) | `apps/dashboard` | ✅ builds + typechecks + renders |
+| Seed CLI | `tools/cli/seed.py` | ✅ |
 
-`43 unit/property tests passing.` Run `make test` to verify.
+`52 unit/integration tests passing`, ruff clean, dashboard `next build` green. Run `make check` to verify.
+
+> The API/pipeline use in-memory repositories in M0 so the whole slice runs without a database.
+> The DB-backed adapters (Postgres/MinIO/OpenSearch) implement the same interfaces and land in M1.

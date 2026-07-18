@@ -8,6 +8,7 @@ The apex is the strongest company blocking/matching key.
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from urllib.parse import urlparse
 
@@ -61,6 +62,13 @@ def apex_domain(value: str) -> str:
     host = normalize_host(value)
     if not host or not _HOST_RE.match(host):
         return ""
+    # IP addresses and bare hostnames (e.g. localhost) are not registrable
+    # domains — return the host unchanged rather than slicing labels.
+    try:
+        ipaddress.ip_address(host)
+        return host
+    except ValueError:
+        pass
     labels = host.split(".")
     if len(labels) <= 2:
         return host

@@ -6,5 +6,6 @@ stage logic is identical — this is the reference implementation of the spine.
 """
 
 from .m0 import M0Pipeline, PipelineResult
+from .orchestrator import IngestSummary, ingest_company_web_urls
 
-__all__ = ["M0Pipeline", "PipelineResult"]
+__all__ = ["M0Pipeline", "PipelineResult", "IngestSummary", "ingest_company_web_urls"]

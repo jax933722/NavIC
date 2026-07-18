@@ -49,6 +49,11 @@ class TestDomain:
         assert apex_domain("") == ""
         assert apex_domain("not a domain!!") == ""
 
+    def test_ip_address_not_mangled(self):
+        # IPs are not registrable domains — must not be sliced to "0.1".
+        assert apex_domain("http://127.0.0.1:9999/") == "127.0.0.1"
+        assert apex_domain("http://192.168.1.10/x") == "192.168.1.10"
+
     @given(st.text())
     def test_apex_idempotent(self, s):
         once = apex_domain(s)
