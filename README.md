@@ -14,6 +14,19 @@ Opportunities are classified into three continuously-upgraded maturity tiers:
 - **Silver** — company + domain + buying signal + inferred department + inferred decision-maker role
 - **Bronze** — company + domain + weak/early buying signal
 
+## Try it locally (one command, no setup)
+
+With Docker installed:
+
+```bash
+docker compose -f docker-compose.demo.yml up --build
+# then open http://localhost:3000
+```
+
+This brings up the API (pre-seeded with realistic multi-source sample data — Gold /
+Silver / Bronze opportunities) and the dashboard. See
+[docs/LOCAL_TESTING.md](./docs/LOCAL_TESTING.md) for a full, non-technical walkthrough.
+
 ## Documentation
 
 The full engineering blueprint lives in [`docs/`](./docs):

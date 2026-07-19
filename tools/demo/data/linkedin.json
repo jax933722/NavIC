@@ -1,0 +1,37 @@
+{
+  "company": {
+    "name": "Wayne Analytics",
+    "website": "https://wayne-analytics.com",
+    "linkedin_url": "https://www.linkedin.com/company/wayne-analytics",
+    "linkedin_slug": "wayne-analytics",
+    "industry": "Software",
+    "employee_range": "51-200"
+  },
+  "people": [
+    {
+      "name": "Lucius Fox",
+      "title": "VP of Sales",
+      "linkedin_url": "https://www.linkedin.com/in/lucius-fox",
+      "linkedin_slug": "lucius-fox"
+    },
+    {
+      "name": "Barbara Gordon",
+      "title": "Staff Data Engineer",
+      "linkedin_url": "https://www.linkedin.com/in/barbara-gordon",
+      "linkedin_slug": "barbara-gordon"
+    },
+    {
+      "title": "Ghost with no name (should be skipped)"
+    }
+  ],
+  "jobs": [
+    {
+      "title": "Senior Account Executive",
+      "url": "https://www.linkedin.com/jobs/view/1001"
+    },
+    {
+      "title": "Office Manager",
+      "url": "https://www.linkedin.com/jobs/view/1002"
+    }
+  ]
+}

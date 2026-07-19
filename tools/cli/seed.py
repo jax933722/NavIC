@@ -49,7 +49,8 @@ def main(argv: list[str] | None = None) -> int:
     for opp in opportunities.list():
         company = entities.get(opp.company_entity_id)
         domain = company.attributes.get("primary_domain") if company else "?"
-        print(f"  [{opp.tier.upper():6}] {domain:30} score={opp.opportunity_score:.3f}  {opp.thesis}")
+        print(f"  [{opp.tier.upper():6}] {domain:30} "
+              f"score={opp.opportunity_score:.3f}  {opp.thesis}")
     return 0
 
 

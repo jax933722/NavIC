@@ -1,0 +1,36 @@
+{
+  "company": {
+    "name": "Stark Robotics",
+    "website": "https://starkrobotics.com",
+    "careers_url": "https://starkrobotics.com/careers"
+  },
+  "jobs": [
+    {
+      "title": "Senior Account Executive",
+      "absolute_url": "https://boards.greenhouse.io/starkrobotics/jobs/1",
+      "location": {"name": "New York, NY"},
+      "departments": [{"name": "Sales"}]
+    },
+    {
+      "title": "Staff Software Engineer",
+      "absolute_url": "https://boards.greenhouse.io/starkrobotics/jobs/2",
+      "location": {"name": "Remote"},
+      "departments": [{"name": "Engineering"}]
+    },
+    {
+      "title": "Growth Marketer",
+      "absolute_url": "https://boards.greenhouse.io/starkrobotics/jobs/3",
+      "location": {"name": "Remote"}
+    },
+    {
+      "title": "Analytics Engineer",
+      "absolute_url": "https://boards.greenhouse.io/starkrobotics/jobs/4",
+      "location": {"name": "Boston, MA"}
+    },
+    {
+      "title": "Office Coordinator",
+      "absolute_url": "https://boards.greenhouse.io/starkrobotics/jobs/5",
+      "location": {"name": "New York, NY"}
+    }
+  ]
+}

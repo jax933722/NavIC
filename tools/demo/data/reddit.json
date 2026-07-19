@@ -1,0 +1,36 @@
+{
+  "kind": "Listing",
+  "data": {
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "title": "Globex just raised a $40M Series B to scale their data platform",
+          "selftext": "Congrats to the team. They're now hiring SDRs and account executives across the US.",
+          "url_overridden_by_dest": "https://www.globex.com/blog/series-b",
+          "url": "https://www.globex.com/blog/series-b",
+          "permalink": "/r/startups/comments/abc123/globex_series_b/"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "We are migrating off Salesforce to a cheaper stack",
+          "selftext": "After years on Salesforce we switched from it. Painful but worth it.",
+          "url_overridden_by_dest": "https://initech.com/engineering/crm",
+          "url": "https://initech.com/engineering/crm",
+          "permalink": "/r/sales/comments/def456/migrating_off_salesforce/"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "Just a text post with no external link",
+          "selftext": "Discussion only.",
+          "url": "https://www.reddit.com/r/startups/comments/ghi789/text_post/",
+          "permalink": "/r/startups/comments/ghi789/text_post/"
+        }
+      }
+    ]
+  }
+}
