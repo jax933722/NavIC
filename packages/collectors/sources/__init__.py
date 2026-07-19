@@ -2,9 +2,12 @@
 
 from . import (  # noqa: F401  (self-register via @register)
     company_web,
+    funding,
     github,
+    greenhouse,
     hackernews,
     linkedin,
+    news,
     producthunt,
     reddit,
     rss_blog,
@@ -18,4 +21,7 @@ __all__ = [
     "reddit",
     "producthunt",
     "linkedin",
+    "greenhouse",
+    "news",
+    "funding",
 ]

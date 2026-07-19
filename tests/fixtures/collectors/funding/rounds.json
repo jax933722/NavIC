@@ -1,0 +1,25 @@
+{
+  "rounds": [
+    {
+      "company": {"name": "Wonka Industries", "website": "https://wonka.com"},
+      "round": "Series B",
+      "amount_usd": 45000000,
+      "investors": ["Sequoia", "a16z"],
+      "announced_on": "2026-07-01",
+      "url": "https://fundingnews.example/wonka-series-b"
+    },
+    {
+      "company": {"name": "Gekko Capital Tech", "domain": "gekkotech.com"},
+      "round": "Seed",
+      "amount": "2000000",
+      "investors": ["Y Combinator"],
+      "announced_on": "2026-06-15",
+      "source_url": "https://fundingnews.example/gekko-seed"
+    },
+    {
+      "company": {"name": "No Domain Co"},
+      "round": "Series A",
+      "amount_usd": 10000000
+    }
+  ]
+}
