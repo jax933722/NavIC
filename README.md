@@ -65,6 +65,19 @@ cd apps/dashboard && pnpm install && pnpm dev           # the board at :3000
 **Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
 `packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
 
+### M5 — Search · M3 — Pluggable sources · M6 — Digest (complete)
+
+- **Search** (`packages/search`): an intent parser compiles the marquee queries —
+  "companies hiring SDR" → `hiring:Sales`, "using HubSpot" → `tech:hubspot`,
+  "looking for CRM" → `looking_for:crm`, "people discussing deliverability" → person + axis —
+  executed over the repositories with ranked, evidence-backed results and an "interpreted as" echo.
+  `GET /v1/search` + a dashboard `/search` page. (OpenSearch is the documented scale path.)
+- **Second collector** (`packages/collectors/sources/rss_blog.py`): a structurally different source
+  (RSS/Atom feed) added with **only a new module + `@register`** — the framework's core promise,
+  proven by a golden-fixture test. Emits company, posts, authors, and signals.
+- **Daily digest** (`packages/opportunities/digest.py`): new + upgraded opportunities since a cutoff,
+  from the promotion ledger. `GET /v1/digest`.
+
 ### M2 + M4 — Signals, Opportunities, and Gold (complete)
 
 - **Signal classifiers** (`packages/signals`): funding, hiring (with department inference), tech
