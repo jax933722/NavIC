@@ -54,6 +54,14 @@ class RepoBundle:
             timeline=self.timeline, transitions=self.transitions, edges=self.edges,
         )
 
+    def resolution_engine(self):
+        from entities import ResolutionEngine
+
+        return ResolutionEngine(
+            entities=self.entities, evidence=self.evidence, observations=self.observations,
+            blocking=self.blocking, reviews=self.reviews, merges=self.merges,
+        )
+
 
 class RepoProvider(Protocol):
     @contextmanager

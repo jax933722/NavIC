@@ -216,6 +216,58 @@ def search(q: str, limit: int = 25) -> SearchResponse:
         )
 
 
+@app.get("/v1/admin/collectors")
+def list_collectors() -> dict:
+    """Registered collectors + capabilities (ops page, spec 07 §3.7)."""
+    import collectors.sources  # noqa: F401  (ensure registration)
+    from collectors import REGISTRY
+
+    out = []
+    for slug, cls in sorted(REGISTRY.items()):
+        caps = getattr(cls, "capabilities", None)
+        out.append({
+            "collector": slug,
+            "source": getattr(cls, "source_slug", None),
+            "version": getattr(cls, "version", None),
+            "capabilities": caps.__dict__ if caps else {},
+        })
+    return {"data": out}
+
+
+def _entity_summary(r: RepoBundle, entity_id: int) -> dict:
+    ent = r.entities.get(entity_id)
+    if ent is None:
+        return {"id": entity_id}
+    return {"id": ent.id, "type": ent.entity_type,
+            "name": ent.display_name or ent.attributes.get("name"),
+            "domain": ent.attributes.get("primary_domain"),
+            "attributes": {k: v for k, v in ent.attributes.items()
+                           if not k.endswith("__provenance") and not k.startswith("__")}}
+
+
+@app.get("/v1/admin/resolution/review")
+def list_reviews() -> dict:
+    """Pending borderline merge pairs for operator adjudication (spec 04 §11)."""
+    with app.state.provider.bundle() as r:
+        out = []
+        for review in r.reviews.pending():
+            out.append({
+                "id": review.id, "match_prob": round(review.match_prob, 4),
+                "features": review.features,
+                "left": _entity_summary(r, review.left_entity),
+                "right": _entity_summary(r, review.right_entity),
+            })
+        return {"data": out}
+
+
+@app.post("/v1/admin/resolution/{review_id}/decide")
+def decide_review(review_id: int, decision: str = Query(..., pattern="^(merge|no_match)$")) -> dict:
+    with app.state.provider.bundle() as r:
+        engine = r.resolution_engine()
+        engine.decide_review(review_id, decision)
+        return {"review_id": review_id, "decision": decision, "status": "ok"}
+
+
 @app.post("/v1/admin/seed", response_model=SeedResponse)
 def seed(req: SeedRequest) -> SeedResponse:
     """Run the company_web collector over URLs and ingest the results (dev/demo)."""
