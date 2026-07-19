@@ -225,14 +225,18 @@ class OpportunityTransition(Base):
 
 class TimelineEvent(Base):
     __tablename__ = "timeline_event"
+    # Monthly RANGE-partitioned (migration 0003): the partition column is part of
+    # the primary key, as Postgres requires for partitioned tables.
     __table_args__ = (Index("timeline_company_idx", "company_entity_id", "occurred_at"),)
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     company_entity_id: Mapped[int] = mapped_column(ForeignKey("entity.id"))
     event_type: Mapped[str] = mapped_column(String)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     signal_id: Mapped[int | None] = mapped_column(ForeignKey("signal.id"), nullable=True)
     evidence_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), default=list)
-    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True, default=utcnow
+    )
 
 
 class Score(Base):
