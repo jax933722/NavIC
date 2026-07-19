@@ -6,5 +6,6 @@ as a derived query surface.
 """
 
 from .builder import GraphBuilder
+from .mirror import AgeGraphMirror, GraphMirror, NullMirror
 
-__all__ = ["GraphBuilder"]
+__all__ = ["GraphBuilder", "GraphMirror", "NullMirror", "AgeGraphMirror"]

@@ -6,6 +6,14 @@ This module is the planner; a durable executor (Temporal, blueprint §19) invoke
 ``plan`` on a tick and runs the returned tasks. In-memory + testable here.
 """
 
+from .executor import Executor, InProcessExecutor, TemporalExecutor, TickResult
 from .planner import CrawlTarget, Scheduler
 
-__all__ = ["CrawlTarget", "Scheduler"]
+__all__ = [
+    "CrawlTarget",
+    "Scheduler",
+    "Executor",
+    "InProcessExecutor",
+    "TemporalExecutor",
+    "TickResult",
+]
