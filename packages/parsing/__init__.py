@@ -2,5 +2,6 @@
 
 from .html import parse_html
 from .models import ParsedDocument, ParsedLink
+from .rss import RssItem, parse_rss
 
-__all__ = ["ParsedDocument", "ParsedLink", "parse_html"]
+__all__ = ["ParsedDocument", "ParsedLink", "parse_html", "parse_rss", "RssItem"]

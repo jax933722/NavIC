@@ -171,6 +171,25 @@ def get_evidence(evidence_id: int) -> EvidenceRef:
     )
 
 
+@app.get("/v1/digest")
+def digest(days: int = 1) -> dict:
+    from datetime import UTC, datetime, timedelta
+
+    from opportunities import build_digest
+
+    state = _state()
+    since = datetime.now(UTC) - timedelta(days=days)
+    d = build_digest(opportunities=state.opportunities, transitions=state.transitions,
+                     entities=state.entities, since=since)
+    return {
+        "generated_at": d.generated_at.isoformat(),
+        "since": d.since.isoformat(),
+        "total": d.total,
+        "new": [i.__dict__ for i in d.new],
+        "upgraded": [i.__dict__ for i in d.upgraded],
+    }
+
+
 @app.get("/v1/search", response_model=SearchResponse)
 def search(q: str, limit: int = 25) -> SearchResponse:
     state = _state()

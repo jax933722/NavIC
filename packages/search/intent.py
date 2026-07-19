@@ -74,13 +74,18 @@ def parse_query(query: str) -> QueryIntent:
     if q.startswith("people") or "people " in q or q.startswith("who "):
         intent.target = "person"
 
-    m = re.search(r"hiring\s+([a-z /]+)", q)
-    if m:
-        dept = _find_department(m.group(1)) or _find_department(q)
+    if re.search(r"\bhiring\b", q):
+        m = re.search(r"hiring\s+([a-z /]+)", q)
+        dept = _find_department(m.group(1)) if m else None
+        dept = dept or _find_department(q)
         if dept:
             intent.hiring_department = dept
             intent.signal_type = "hiring"
             intent.filters_found.append(f"hiring:{dept}")
+        else:
+            # Bare "hiring" with no recognised role -> match any hiring signal.
+            intent.signal_type = "hiring"
+            intent.filters_found.append("signal:hiring")
 
     m = re.search(r"\b(using|use|on)\s+([a-z0-9.]+)", q)
     if m and m.group(2) in _KNOWN_TECH:
