@@ -71,6 +71,23 @@ class CompanyDetail(BaseModel):
     timeline: list[TimelineEventOut]
 
 
+class SearchResultOut(BaseModel):
+    type: str
+    id: int
+    name: str | None
+    domain: str | None
+    score: float
+    tier: str | None = None
+    matched_on: list[str] = []
+    evidence_refs: list[EvidenceRef] = []
+
+
+class SearchResponse(BaseModel):
+    data: list[SearchResultOut]
+    interpreted: dict
+    page: Page
+
+
 class SeedRequest(BaseModel):
     urls: list[str]
 

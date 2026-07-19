@@ -143,6 +143,10 @@ class InMemoryEntityRepo:
     def get(self, entity_id: int) -> EntityRow | None:
         return self._rows.get(entity_id)
 
+    def all_of_type(self, entity_type: str) -> list[EntityRow]:
+        return [r for r in self._rows.values()
+                if r.entity_type == entity_type and not r.attributes.get("merged_into")]
+
     # -- engine-oriented API (M1 resolution engine) --
     def create_blank(self, entity_type: str) -> EntityRow:
         row = EntityRow(

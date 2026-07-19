@@ -71,3 +71,12 @@ def test_not_found(client):
     assert client.get("/v1/opportunities/99999").status_code == 404
     assert client.get("/v1/evidence/99999").status_code == 404
     assert client.get("/v1/companies/99999").status_code == 404
+
+
+def test_search_hiring(client):
+    r = client.get("/v1/search", params={"q": "companies hiring"})
+    assert r.status_code == 200
+    body = r.json()
+    assert "structured_filters" in body["interpreted"]
+    # The seeded Acme fixture has a hiring signal.
+    assert any(item["name"] == "Acme Robotics" for item in body["data"])

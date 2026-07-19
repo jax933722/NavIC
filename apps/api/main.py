@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.errors import NavicError
 from ingestion import HttpFetchClient
 from pipeline import ingest_company_web_urls
+from search import SearchService
 
 from .schemas import (
     CompanyDetail,
@@ -27,6 +28,8 @@ from .schemas import (
     OpportunityCard,
     OpportunityList,
     Page,
+    SearchResponse,
+    SearchResultOut,
     SeedRequest,
     SeedResponse,
     TimelineEventOut,
@@ -165,6 +168,29 @@ def get_evidence(evidence_id: int) -> EvidenceRef:
     return EvidenceRef(
         id=row.id, url=row.url, claim_type=row.claim_type, snippet=row.snippet,
         confidence=row.confidence, observed_at=row.observed_at,
+    )
+
+
+@app.get("/v1/search", response_model=SearchResponse)
+def search(q: str, limit: int = 25) -> SearchResponse:
+    state = _state()
+    svc = SearchService(
+        entities=state.entities, signals=state.signals, opportunities=state.opportunities,
+        edges=state.edges, evidence=state.evidence,
+    )
+    intent, results = svc.search(q, limit=limit)
+    data = [
+        SearchResultOut(
+            type=r.type, id=r.id, name=r.name, domain=r.domain, score=r.score, tier=r.tier,
+            matched_on=r.matched_on, evidence_refs=_evidence_refs(state, r.evidence_ids),
+        )
+        for r in results
+    ]
+    return SearchResponse(
+        data=data,
+        interpreted={"structured_filters": intent.filters_found, "free_text": intent.free_text,
+                     "target": intent.target},
+        page=Page(has_more=False, limit=limit),
     )
 
 

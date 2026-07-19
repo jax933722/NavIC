@@ -120,6 +120,14 @@ class SqlEntityRepo:
         row = self.s.get(m.Entity, entity_id)
         return self._to_dto(row) if row else None
 
+    def all_of_type(self, entity_type: str) -> list[EntityRow]:
+        rows = self.s.scalars(
+            select(m.Entity).where(
+                m.Entity.entity_type == entity_type, m.Entity.status != "merged"
+            )
+        ).all()
+        return [self._to_dto(r) for r in rows]
+
 
 class SqlSignalRepo:
     def __init__(self, session: Session):
