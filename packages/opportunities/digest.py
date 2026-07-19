@@ -47,15 +47,18 @@ def build_digest(*, opportunities, transitions, entities, since: datetime | None
 
     def company_name(company_id):
         ent = entities.get(company_id)
-        return (ent.display_name or ent.attributes.get("name"), ent.attributes.get("primary_domain")) \
-            if ent else (None, None)
+        if not ent:
+            return (None, None)
+        return (ent.display_name or ent.attributes.get("name"),
+                ent.attributes.get("primary_domain"))
 
     for opp in opps_by_id.values():
         if opp.created_at >= since:
             name, domain = company_name(opp.company_entity_id)
             digest.new.append(DigestItem(
                 opportunity_id=opp.id, company_name=name, domain=domain, tier=opp.tier,
-                thesis=opp.thesis, kind="new", detail=f"new {opp.tier}", score=opp.opportunity_score,
+                thesis=opp.thesis, kind="new", detail=f"new {opp.tier}",
+                score=opp.opportunity_score,
             ))
 
     # Upgrades from the promotion ledger.

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 from apps.api.main import app
-from apps.api.state import new_state
+from apps.api.repos import InMemoryProvider
 from fastapi.testclient import TestClient
 
 from ingestion import StubFetchClient
@@ -21,13 +21,14 @@ URL = "https://www.acme.com/"
 
 @pytest.fixture
 def client():
-    state = new_state()
-    app.state.app_state = state  # fresh in-memory repos per test
-    ingest_company_web_urls(
-        [URL],
-        pipeline=state.pipeline,
-        fetch=StubFetchClient({URL: (200, "text/html", HOMEPAGE)}),
-    )
+    provider = InMemoryProvider()
+    app.state.provider = provider  # fresh in-memory repos per test
+    with provider.bundle() as r:
+        ingest_company_web_urls(
+            [URL],
+            pipeline=r.pipeline,
+            fetch=StubFetchClient({URL: (200, "text/html", HOMEPAGE)}),
+        )
     return TestClient(app)
 
 
