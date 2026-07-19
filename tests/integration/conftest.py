@@ -27,6 +27,9 @@ def db_session():
         pytest.skip(f"database not reachable: {exc}")
 
     session = get_sessionmaker()()
+    # Reset search_path in case a pooled connection was left on the AGE catalog
+    # by a prior test (test isolation for the shared engine pool).
+    session.execute(text("SET search_path = public"))
     # Clean slate for deterministic assertions (order respects FKs).
     for table in (
         "opportunity_transition", "opportunity", "signal", "entity_merge",
