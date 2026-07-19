@@ -18,6 +18,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Index,
+    Integer,
     LargeBinary,
     String,
     Text,
@@ -76,6 +77,31 @@ class Evidence(Base):
     snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.5)
     observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True, default=utcnow
+    )
+
+
+# ---------------------------------------------------------------- raw layer (index over S3)
+
+
+class RawDocument(Base):
+    __tablename__ = "raw_document"
+    # Monthly RANGE-partitioned (migration 0005). Indexes the immutable S3 bytes;
+    # part of the "never lose raw" invariant — tiered, never dropped.
+    __table_args__ = (
+        Index("raw_document_hash_idx", "content_hash"),
+        Index("raw_document_url_idx", "url", "fetched_at"),
+    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source_id: Mapped[int] = mapped_column(BigInteger)
+    collector_id: Mapped[int] = mapped_column(BigInteger)
+    url: Mapped[str] = mapped_column(Text)
+    s3_key: Mapped[str] = mapped_column(Text)
+    content_hash: Mapped[bytes] = mapped_column(LargeBinary)
+    content_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    headers: Mapped[dict] = mapped_column(JSONB, default=dict)
+    fetched_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), primary_key=True, default=utcnow
     )
 
@@ -309,4 +335,5 @@ __all__ = [
     "ResolutionReview",
     "EntityMerge",
     "TimelineEvent",
+    "RawDocument",
 ]

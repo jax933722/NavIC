@@ -31,7 +31,7 @@ def db_session():
     for table in (
         "opportunity_transition", "opportunity", "signal", "entity_merge",
         "resolution_review", "blocking_key", "entity_source", "evidence",
-        "company", "person", "edge", "score", "entity",
+        "raw_document", "timeline_event", "company", "person", "edge", "score", "entity",
     ):
         session.execute(text(f"TRUNCATE {table} RESTART IDENTITY CASCADE"))
     session.commit()

@@ -20,6 +20,7 @@ from .repositories import (
     MergeRow,
     ObservationRow,
     OpportunityRow,
+    RawDocumentRow,
     ReviewRow,
     SignalRow,
     TimelineEventRow,
@@ -53,6 +54,39 @@ class SqlEvidenceRepo:
             return None
         return EvidenceRow(row.id, row.url, row.claim_type, row.snippet, row.confidence,
                            row.content_hash.decode("utf-8", "ignore"), row.observed_at)
+
+
+class SqlRawDocumentRepo:
+    def __init__(self, session: Session):
+        self.s = session
+
+    def add(self, *, source_id, collector_id, url, s3_key, content_hash,
+            content_type=None, http_status=None) -> RawDocumentRow:
+        existing = self.s.scalar(
+            select(m.RawDocument).where(m.RawDocument.content_hash == _hash_bytes(content_hash))
+        )
+        if existing:
+            return self._dto(existing)
+        row = m.RawDocument(
+            source_id=source_id, collector_id=collector_id, url=url, s3_key=s3_key,
+            content_hash=_hash_bytes(content_hash), content_type=content_type,
+            http_status=http_status,
+        )
+        self.s.add(row)
+        self.s.flush()
+        return self._dto(row)
+
+    def get_by_hash(self, content_hash: str) -> RawDocumentRow | None:
+        row = self.s.scalar(
+            select(m.RawDocument).where(m.RawDocument.content_hash == _hash_bytes(content_hash))
+        )
+        return self._dto(row) if row else None
+
+    def _dto(self, r: m.RawDocument) -> RawDocumentRow:
+        return RawDocumentRow(
+            r.id, r.source_id, r.collector_id, r.url, r.s3_key,
+            r.content_hash.decode("utf-8", "ignore"), r.content_type, r.http_status, r.fetched_at,
+        )
 
 
 class SqlEntityRepo:

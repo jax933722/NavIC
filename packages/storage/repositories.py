@@ -244,6 +244,47 @@ class InMemoryOpportunityRepo:
 
 
 @dataclass
+class RawDocumentRow:
+    id: int
+    source_id: int
+    collector_id: int
+    url: str
+    s3_key: str
+    content_hash: str
+    content_type: str | None
+    http_status: int | None
+    fetched_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+class InMemoryRawDocumentRepo:
+    """Index over the immutable S3 raw bytes (spec 01 §3.5)."""
+
+    def __init__(self) -> None:
+        self._rows: dict[int, RawDocumentRow] = {}
+        self._by_hash: dict[str, int] = {}
+        self._ids = count(1)
+
+    def add(self, *, source_id, collector_id, url, s3_key, content_hash,
+            content_type=None, http_status=None) -> RawDocumentRow:
+        # Content-addressed: identical bytes index once.
+        existing = self._by_hash.get(content_hash)
+        if existing:
+            return self._rows[existing]
+        row = RawDocumentRow(
+            id=next(self._ids), source_id=source_id, collector_id=collector_id, url=url,
+            s3_key=s3_key, content_hash=content_hash, content_type=content_type,
+            http_status=http_status,
+        )
+        self._rows[row.id] = row
+        self._by_hash[content_hash] = row.id
+        return row
+
+    def get_by_hash(self, content_hash: str) -> RawDocumentRow | None:
+        rid = self._by_hash.get(content_hash)
+        return self._rows.get(rid) if rid else None
+
+
+@dataclass
 class EdgeRow:
     id: int
     src_entity_id: int
