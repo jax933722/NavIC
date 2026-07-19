@@ -1,0 +1,11 @@
+{
+  "login": "acme",
+  "name": "Acme Robotics",
+  "blog": "https://acme.com",
+  "html_url": "https://github.com/acme",
+  "languages": ["Python", "TypeScript", "Snowflake"],
+  "members": [
+    {"login": "jroe", "name": "Jane Roe", "role": "CTO"},
+    {"login": "mlee", "name": "Marcus Lee", "role": "Engineer"}
+  ]
+}
