@@ -137,8 +137,9 @@ class OpenSearchIndex:
         self._index = index
 
     def ensure_index(self, mapping: dict[str, Any]) -> None:
-        if not self._client.indices.exists(self._index):
-            self._client.indices.create(self._index, body=mapping)
+        # opensearch-py 3.x requires keyword arguments.
+        if not self._client.indices.exists(index=self._index):
+            self._client.indices.create(index=self._index, body=mapping)
 
     def index_document(self, doc_id: int, doc: dict[str, Any]) -> None:
         self._client.index(index=self._index, id=doc_id, body=doc)

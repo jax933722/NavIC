@@ -25,6 +25,10 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
 ]
+# Optional integrations — installed where the corresponding service is available.
+# The adapters lazily import these, so the core does not depend on them.
+opensearch = ["opensearch-py>=2.4"]
+temporal = ["temporalio>=1.7"]
 
 # The monorepo uses a flat `packages/` source root (see docs/FOLDER_STRUCTURE.md).
 # Each subdirectory of packages/ is an importable top-level package, e.g. `from core.config import settings`.
