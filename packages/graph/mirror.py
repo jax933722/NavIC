@@ -19,17 +19,36 @@ def _esc(value: str) -> str:
 
 
 def node_merge_cypher(entity_type: str, entity_id: int, label: str | None) -> str:
-    """Idempotent MERGE of a vertex keyed on entity_id, carrying its label."""
-    props = f"{{entity_id: {int(entity_id)}, label: '{_esc(label or '')}'}}"
-    return f"MERGE (n:{entity_type} {{entity_id: {int(entity_id)}}}) SET n = {props}"
+    """Idempotent MERGE of a vertex keyed on entity_id, carrying its label.
+
+    RETURN is required: AGE only applies an updating clause when the statement
+    returns a row. Setting a property whose key is the MERGE key persists on
+    create, so a single MERGE+SET is fine for vertices.
+    """
+    return (
+        f"MERGE (n:{entity_type} {{entity_id: {int(entity_id)}}}) "
+        f"SET n.label = '{_esc(label or '')}' RETURN id(n)"
+    )
 
 
-def edge_merge_cypher(edge_type: str, src_id: int, dst_id: int, confidence: float) -> str:
-    """Idempotent MERGE of a relationship between two vertices by entity_id."""
+def edge_merge_cypher(edge_type: str, src_id: int, dst_id: int) -> str:
+    """Idempotent MERGE of a relationship between two labelled-by-key vertices."""
     return (
         f"MATCH (a {{entity_id: {int(src_id)}}}), (b {{entity_id: {int(dst_id)}}}) "
-        f"MERGE (a)-[r:{edge_type}]->(b) "
-        f"SET r.confidence = {float(confidence)}"
+        f"MERGE (a)-[r:{edge_type}]->(b) RETURN id(r)"
+    )
+
+
+def edge_set_confidence_cypher(edge_type: str, src_id: int, dst_id: int, confidence: float) -> str:
+    """Set an edge property in a separate statement.
+
+    AGE (1.5) does not apply a SET to a relationship that MERGE creates in the
+    same statement, and lacks ON CREATE SET; so confidence is set on the existing
+    edge in a follow-up MATCH ... SET.
+    """
+    return (
+        f"MATCH ({{entity_id: {int(src_id)}}})-[r:{edge_type}]->({{entity_id: {int(dst_id)}}}) "
+        f"SET r.confidence = {float(confidence)} RETURN id(r)"
     )
 
 
@@ -72,4 +91,7 @@ class AgeGraphMirror:
         self._exec(node_merge_cypher(entity_type, entity_id, label))
 
     def upsert_edge(self, edge_type: str, src_id: int, dst_id: int, confidence: float) -> None:
-        self._exec(edge_merge_cypher(edge_type, src_id, dst_id, confidence))
+        # Two statements: MERGE the edge, then SET its property on the existing edge
+        # (AGE quirk — see edge_set_confidence_cypher).
+        self._exec(edge_merge_cypher(edge_type, src_id, dst_id))
+        self._exec(edge_set_confidence_cypher(edge_type, src_id, dst_id, confidence))

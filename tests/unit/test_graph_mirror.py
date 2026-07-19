@@ -1,21 +1,30 @@
 """AGE mirror Cypher generation (pure). The adapter runs against AGE in staging."""
 
 from graph import GraphBuilder, NullMirror
-from graph.mirror import edge_merge_cypher, node_merge_cypher, wrap_age
+from graph.mirror import (
+    edge_merge_cypher,
+    edge_set_confidence_cypher,
+    node_merge_cypher,
+    wrap_age,
+)
 from storage.repositories import InMemoryEdgeRepo
 
 
 def test_node_merge_cypher_is_idempotent_shape():
     c = node_merge_cypher("person", 42, "VP of Sales")
     assert "MERGE (n:person {entity_id: 42})" in c
-    assert "label: 'VP of Sales'" in c
+    assert "SET n.label = 'VP of Sales'" in c
+    assert c.rstrip().endswith("RETURN id(n)")  # AGE applies SET only with a RETURN
 
 
-def test_edge_merge_cypher():
-    c = edge_merge_cypher("works_at", 2, 1, 0.7)
+def test_edge_merge_and_confidence_cypher():
+    c = edge_merge_cypher("works_at", 2, 1)
     assert "MATCH (a {entity_id: 2}), (b {entity_id: 1})" in c
     assert "MERGE (a)-[r:works_at]->(b)" in c
-    assert "r.confidence = 0.7" in c
+    assert c.rstrip().endswith("RETURN id(r)")
+    # Confidence is set on the existing edge in a follow-up statement (AGE quirk).
+    s = edge_set_confidence_cypher("works_at", 2, 1, 0.7)
+    assert "-[r:works_at]->" in s and "r.confidence = 0.7" in s
 
 
 def test_cypher_escaping():
