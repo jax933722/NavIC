@@ -88,7 +88,7 @@ def test_adapter_creates_index_indexes_and_queries(os_stub):
 
     # 3) our query DSL is issued and hits are parsed back
     results = idx.search(parse_query("companies hiring SDR"), limit=25)
-    search_req = next(r for r in _RECORer["requests"] if r[1].endswith("/_search") or "/_search" in r[1])
+    search_req = next(r for r in _RECORer["requests"] if "/_search" in r[1])
     filters = search_req[2]["query"]["bool"]["filter"]
     assert {"term": {"hiring_departments": "Sales"}} in filters
     assert results and results[0]["domain"] == "acme.com"

@@ -4,7 +4,18 @@ from . import (  # noqa: F401  (self-register via @register)
     company_web,
     github,
     hackernews,
+    linkedin,
+    producthunt,
+    reddit,
     rss_blog,
 )
 
-__all__ = ["company_web", "rss_blog", "github", "hackernews"]
+__all__ = [
+    "company_web",
+    "rss_blog",
+    "github",
+    "hackernews",
+    "reddit",
+    "producthunt",
+    "linkedin",
+]
