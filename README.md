@@ -65,6 +65,22 @@ cd apps/dashboard && pnpm install && pnpm dev           # the board at :3000
 **Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
 `packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
 
+### M3/M5/M6 continued — scheduler, more sources, DB-backed API, graph UI, partitions, load
+
+- **DB-backed serving**: the API is datastore-agnostic via a repo provider —
+  in-memory by default, **Postgres** when `NAVIC_API_BACKEND=postgres` (session per request),
+  with identical endpoint code. Verified reading the board + search from real Postgres.
+- **Adaptive scheduler** (`packages/scheduler`): value×staleness crawl planning; hot targets get a
+  shorter effective cadence (Temporal is the durable executor).
+- **Four collectors**: `company_web`, `rss_blog`, `github_org`, `hackernews` — HTML, XML, and JSON
+  sources, each added with only a module + `@register`, all golden-fixture tested.
+- **Graph explorer UI**: `/graph` renders a company's neighborhood as SVG from
+  `GET /v1/companies/{id}/graph`.
+- **Partition automation** (`packages/maintenance`): monthly RANGE partition DDL/bounds, verified to
+  route rows on real Postgres; retention = tiering, never DROP for raw/evidence.
+- **Load harness**: pipeline throughput floor + sub-second search over a synthetic corpus (guards
+  against O(n²) regressions).
+
 ### M5 — Search · M3 — Pluggable sources · M6 — Digest (complete)
 
 - **Search** (`packages/search`): an intent parser compiles the marquee queries —
