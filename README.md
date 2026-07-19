@@ -65,6 +65,23 @@ cd apps/dashboard && pnpm install && pnpm dev           # the board at :3000
 **Monorepo layout** (see [`docs/FOLDER_STRUCTURE.md`](./docs/FOLDER_STRUCTURE.md)): domain logic lives in
 `packages/*` (importable, infra-free, unit-testable); `apps/*` are thin process shells.
 
+### Infrastructure integrations (interface-complete)
+
+The blueprint's remaining pieces are external-service integrations. Each is built to its interface
+with the pure logic unit-tested here; the live adapters run against the service in staging.
+
+- **All three time-series giants partitioned** on Postgres: `evidence`, `raw_document`
+  (both data-preserving conversions — never lose raw), and `timeline_event`, plus an idempotent
+  `run_partition_maintenance` that pre-creates upcoming months. Verified routing + reversibility on PG.
+- **OpenSearch projection** (`packages/search/opensearch.py`): index mappings (incl. `knn_vector`),
+  document projection, and a query-DSL compiler from the parsed intent. Repo-backed search is the
+  default; OpenSearch is the drop-in scale swap with an identical result contract.
+- **Apache AGE graph mirror** (`packages/graph/mirror.py`): `GraphMirror` protocol with `NullMirror`
+  (default) and `AgeGraphMirror` (idempotent Cypher `MERGE`s); the graph builder mirrors edges through it.
+- **Temporal executor** (`packages/scheduler/executor.py`): `InProcessExecutor` (tested — runs due
+  crawls, isolates failures) and `TemporalExecutor` submitting durable `CrawlWorkflow`s; the SDK import
+  is guarded so the module loads without it.
+
 ### M3/M5/M6 continued — scheduler, more sources, DB-backed API, graph UI, partitions, load
 
 - **DB-backed serving**: the API is datastore-agnostic via a repo provider —
