@@ -58,12 +58,14 @@ class Collector(Base):
 
 class Evidence(Base):
     __tablename__ = "evidence"
+    # Monthly RANGE-partitioned (migration 0004): the highest-volume, append-only
+    # table. The partition column is part of the primary key (Postgres requirement).
     __table_args__ = (
         CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_evidence_conf"),
         Index("evidence_claim_idx", "claim_type", "observed_at"),
         Index("evidence_hash_idx", "content_hash"),
     )
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     source_id: Mapped[int] = mapped_column(BigInteger)
     collector_id: Mapped[int] = mapped_column(BigInteger)
     raw_document_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
@@ -73,7 +75,9 @@ class Evidence(Base):
     claim: Mapped[dict] = mapped_column(JSONB, default=dict)
     snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.5)
-    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True, default=utcnow
+    )
 
 
 # ---------------------------------------------------------------- entity core

@@ -46,7 +46,9 @@ class SqlEvidenceRepo:
                            content_hash, row.observed_at)
 
     def get(self, evidence_id: int) -> EvidenceRow | None:
-        row = self.s.get(m.Evidence, evidence_id)
+        # evidence has a composite PK (id, observed_at) for partitioning, so we
+        # query by the globally-unique id column rather than session.get by PK.
+        row = self.s.scalar(select(m.Evidence).where(m.Evidence.id == evidence_id))
         if row is None:
             return None
         return EvidenceRow(row.id, row.url, row.claim_type, row.snippet, row.confidence,

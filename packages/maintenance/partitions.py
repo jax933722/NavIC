@@ -60,3 +60,30 @@ def next_partitions(now: datetime | None = None, ahead: int = 3) -> list[tuple[s
             out.append((parent, cursor))
         cursor = _next_month(cursor)
     return out
+
+
+def _partitioned_parents(conn) -> set[str]:
+    from sqlalchemy import text
+
+    rows = conn.execute(text(
+        "SELECT c.relname FROM pg_partitioned_table pt "
+        "JOIN pg_class c ON c.oid = pt.partrelid"
+    )).scalars().all()
+    return set(rows)
+
+
+def run_partition_maintenance(conn, now: datetime | None = None, ahead: int = 3) -> list[str]:
+    """Idempotently create upcoming monthly partitions for every partitioned parent
+    that exists. Safe to run on every maintenance tick (CREATE ... IF NOT EXISTS).
+    Returns the partition names ensured. Retention (DETACH of cold months) is a
+    separate, deliberate policy — this only creates, never drops."""
+    from sqlalchemy import text
+
+    existing_parents = _partitioned_parents(conn)
+    ensured: list[str] = []
+    for parent, dt in next_partitions(now=now, ahead=ahead):
+        if parent not in existing_parents:
+            continue
+        conn.execute(text(create_partition_sql(parent, dt)))
+        ensured.append(partition_name(parent, dt))
+    return ensured

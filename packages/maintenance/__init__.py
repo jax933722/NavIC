@@ -10,6 +10,7 @@ from .partitions import (
     monthly_partition_bounds,
     next_partitions,
     partition_name,
+    run_partition_maintenance,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "partition_name",
     "create_partition_sql",
     "next_partitions",
+    "run_partition_maintenance",
 ]
