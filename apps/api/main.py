@@ -16,13 +16,18 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.errors import NavicError
+from extraction import EvidenceDraft, build_candidate
 from ingestion import HttpFetchClient
+from normalization import apex_domain
 from opportunities import build_digest
 from pipeline import ingest_company_web_urls
 from search import SearchService
+from signals import detect_signals
 
 from .repos import RepoBundle, get_provider
 from .schemas import (
+    CaptureRequest,
+    CaptureResponse,
     CompanyDetail,
     CompanyRef,
     EvidenceRef,
@@ -296,3 +301,48 @@ def seed(req: SeedRequest) -> SeedResponse:
         except NavicError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return SeedResponse(**summary.__dict__)
+
+
+@app.post("/v1/admin/capture", response_model=CaptureResponse)
+def capture(req: CaptureRequest) -> CaptureResponse:
+    """Human-in-the-loop capture: an operator pastes a post they saw and it becomes an
+    evidence-backed opportunity. No scraping — a person chooses each item. Free and
+    fully within source terms (it's just a human submitting text they lawfully read)."""
+    apex = apex_domain(req.company_domain)
+    if not apex:
+        raise HTTPException(status_code=422,
+                            detail="a valid company website/domain is required (e.g. acme.com)")
+    ev_url = req.source_url or f"https://{apex}"
+    name = req.company_name or apex
+    snippet = req.text.strip()[:200]
+
+    candidates = [build_candidate(
+        kind="entity", entity_type="company",
+        attributes={"name": name, "display_name": name, "primary_domain": apex,
+                    "canonical_key": apex},
+        evidence=EvidenceDraft(url=ev_url, claim_type="company.domain",
+                               snippet=snippet, confidence=0.7),
+        blocking_hints={"apex_domain": apex})]
+
+    if req.author_name:
+        candidates.append(build_candidate(
+            kind="entity", entity_type="person",
+            attributes={"full_name": req.author_name, "name": req.author_name,
+                        "current_role": req.author_role, "company_apex": apex,
+                        "company_domain": apex},
+            evidence=EvidenceDraft(url=ev_url, claim_type="person.role",
+                                   snippet=f"{req.author_name} — {req.author_role or ''}".strip(),
+                                   confidence=0.7),
+            blocking_hints={"name": req.author_name, "company_apex": apex}))
+
+    candidates.extend(detect_signals(req.text, ev_url, apex))
+
+    with app.state.provider.bundle() as r:
+        result = r.pipeline.ingest(candidates, content_hash=ev_url)
+        cards = [_card(r, o) for o in result.opportunities]
+    return CaptureResponse(
+        companies=result.companies,
+        signals=result.signals,
+        detected_signals=[c.signal_type for c in candidates if c.kind == "signal"],
+        opportunities=cards,
+    )

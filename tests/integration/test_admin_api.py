@@ -60,3 +60,34 @@ def test_decide_rejects_bad_decision(client_with_review):
     assert client_with_review.post(
         "/v1/admin/resolution/1/decide", params={"decision": "bogus"}
     ).status_code == 422
+
+
+def test_capture_turns_a_pasted_post_into_a_gold_opportunity():
+    app.state.provider = InMemoryProvider()
+    client = TestClient(app)
+    resp = client.post("/v1/admin/capture", json={
+        "text": ("Can anyone recommend a website designer for on-brand Shopify product "
+                 "pages? Budget around $2000, need it in 30 days."),
+        "company_domain": "brightbrew.co",
+        "company_name": "BrightBrew",
+        "author_name": "Priya Nair",
+        "author_role": "Head of Marketing",
+        "source_url": "https://www.linkedin.com/posts/priya-nair_shopify",
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "solicitation" in body["detected_signals"]
+    gold = [o for o in body["opportunities"] if o["tier"] == "gold"]
+    assert gold, "author + role + company + service request should qualify Gold"
+    opp = gold[0]
+    assert opp["person_name"] == "Priya Nair"
+    assert opp["qualifiers"]["service"] == "web_design"
+    assert opp["qualifiers"]["budget"] == "$2000"
+    assert opp["qualifiers"]["timeline"] == "30 days"
+
+
+def test_capture_requires_a_company_domain():
+    app.state.provider = InMemoryProvider()
+    client = TestClient(app)
+    assert client.post("/v1/admin/capture",
+                       json={"text": "hi", "company_domain": ""}).status_code == 422

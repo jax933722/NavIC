@@ -188,7 +188,7 @@ def _extract_solicitation_meta(text: str) -> dict:
     meta: dict = {}
     mb = _BUDGET_RE.search(text)
     if mb:
-        meta["budget"] = mb.group(1).strip()
+        meta["budget"] = mb.group(1).strip().rstrip(",.")
     mt = _TIMELINE_RE.search(text)
     if mt:
         meta["timeline"] = f"{mt.group(1)} {mt.group(2)}".strip()

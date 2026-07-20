@@ -100,3 +100,21 @@ class SeedResponse(BaseModel):
     signals: int
     opportunities: int
     transitions: int
+
+
+class CaptureRequest(BaseModel):
+    """A post/text an operator saw and chose to save (human-in-the-loop, no scraping)."""
+
+    text: str
+    company_domain: str  # the buyer's company site/domain (anchors the opportunity)
+    company_name: str | None = None
+    author_name: str | None = None
+    author_role: str | None = None
+    source_url: str | None = None  # link back to the post (evidence)
+
+
+class CaptureResponse(BaseModel):
+    companies: int
+    signals: int
+    detected_signals: list[str]
+    opportunities: list[OpportunityCard]

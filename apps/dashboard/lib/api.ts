@@ -53,3 +53,32 @@ export async function fetchOpportunities(tier: TierFilter): Promise<OpportunityL
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
+
+export interface CaptureRequest {
+  text: string;
+  company_domain: string;
+  company_name?: string;
+  author_name?: string;
+  author_role?: string;
+  source_url?: string;
+}
+
+export interface CaptureResponse {
+  companies: number;
+  signals: number;
+  detected_signals: string[];
+  opportunities: OpportunityCard[];
+}
+
+export async function capturedPost(req: CaptureRequest): Promise<CaptureResponse> {
+  const res = await fetch(`${API_URL}/v1/admin/capture`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `API ${res.status}`);
+  }
+  return res.json();
+}
