@@ -76,7 +76,8 @@ Now open **<http://localhost:8480>** in your browser.
 | **Opportunities** | <http://localhost:8480> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. |
 | **Search** | <http://localhost:8480/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
 | **Graph** | <http://localhost:8480/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
-| **Collectors** | <http://localhost:8480/collectors> | All **10 data sources** the platform can pull from (company sites, GitHub, Hacker News, Reddit, Product Hunt, LinkedIn, Greenhouse job boards, news, funding databases, RSS blogs). |
+| **Collectors** | <http://localhost:8480/collectors> | All **11 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, Product Hunt, LinkedIn, Greenhouse job boards, news, funding databases, RSS blogs). |
+| **Capture** | <http://localhost:8480/capture> | Paste any post you saw (a vendor request, a funding note) and it becomes an opportunity — the zero-cost, no-scraping way to feed in LinkedIn-style signals by hand. |
 | **Review** | <http://localhost:8480/review> | The human-in-the-loop queue for borderline "are these the same company/person?" decisions. Empty in the demo (nothing ambiguous). |
 
 You can also hit the API directly:

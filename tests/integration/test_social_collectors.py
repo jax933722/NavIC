@@ -94,6 +94,30 @@ def test_linkedin_authorized_company_people_and_hiring():
     assert all(c.evidence and c.evidence.url for c in result.candidates)
 
 
+def test_hn_freelance_auto_monitor_yields_buyer_requests():
+    # Automated inbound: HN "Seeking Freelancer" buyer comments -> solicitation leads.
+    body = (FIX / "hn_freelance/search.json").read_text()
+    result = _run("hn_freelance", "https://hn.algolia.com/api/v1/search_by_date", body)
+
+    companies = {c.attributes.get("primary_domain") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert {"northwindlabs.io", "brightbrew.co"} <= companies
+
+    sols = [c for c in result.candidates if c.signal_type == "solicitation"]
+    axes = {c.attributes.get("intent_axis") for c in sols}
+    assert "web_development" in axes  # Northwind: React/Node
+    # Budget/stack are lifted from the request text.
+    nw = next(c for c in sols if c.attributes["company_domain"] == "northwindlabs.io")
+    assert nw.attributes.get("budget") == "$8000"
+    assert "react" in (nw.attributes.get("stack") or [])
+
+    # "SEEKING WORK" (a freelancer offering) is NOT ingested as a buyer.
+    assert "janedev.example" not in companies
+    # An anonymous buyer with no company link is skipped (can't anchor it).
+    assert all(c.attributes.get("primary_domain") for c in result.candidates
+               if c.entity_type == "company")
+
+
 def test_linkedin_post_solicitation_becomes_signal():
     # An employee's public "who can I hire?" post is an explicit buying signal
     # attributed to their company (author = in-market buyer).

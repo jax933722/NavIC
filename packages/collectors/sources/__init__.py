@@ -6,6 +6,7 @@ from . import (  # noqa: F401  (self-register via @register)
     github,
     greenhouse,
     hackernews,
+    hn_freelance,
     linkedin,
     news,
     producthunt,
@@ -24,4 +25,5 @@ __all__ = [
     "greenhouse",
     "news",
     "funding",
+    "hn_freelance",
 ]
