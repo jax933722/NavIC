@@ -92,3 +92,20 @@ def test_linkedin_authorized_company_people_and_hiring():
     # Unmapped title still yields a (weak) hiring signal.
     assert any(c.attributes.get("weak") for c in hiring)
     assert all(c.evidence and c.evidence.url for c in result.candidates)
+
+
+def test_linkedin_post_solicitation_becomes_signal():
+    # An employee's public "who can I hire?" post is an explicit buying signal
+    # attributed to their company (author = in-market buyer).
+    body = (FIX / "linkedin/social_post.json").read_text()
+    result = _run("linkedin", "https://api.linkedin.com/v2/organizations/pacini", body)
+
+    sol = [c for c in result.candidates if c.signal_type == "solicitation"]
+    assert sol, "the Shopify designer request should be detected as a solicitation"
+    assert sol[0].attributes["intent_axis"] == "web_design"
+    assert sol[0].attributes["company_domain"] == "pacinicommerce.com"
+
+    # The author is emitted as a person at the company (drives the decision-maker).
+    people = {c.attributes.get("full_name") for c in result.candidates
+              if c.entity_type == "person"}
+    assert "Erika Pacini" in people

@@ -14,6 +14,9 @@ class SignalType(StrEnum):
     PAIN_MENTION = "pain_mention"
     LEADERSHIP_CHANGE = "leadership_change"
     EXPANSION = "expansion"
+    # Someone publicly asking for a vendor/service recommendation — the most
+    # explicit buying signal there is ("can anyone recommend a ... for ...").
+    SOLICITATION = "solicitation"
 
 
 SIGNAL_DEFAULT_STRENGTH: dict[str, float] = {
@@ -25,6 +28,8 @@ SIGNAL_DEFAULT_STRENGTH: dict[str, float] = {
     SignalType.PAIN_MENTION: 0.7,
     SignalType.LEADERSHIP_CHANGE: 0.6,
     SignalType.EXPANSION: 0.5,
+    # Explicit in-market request — the strongest deterministic signal we detect.
+    SignalType.SOLICITATION: 0.9,
 }
 
 # Role keyword -> department (drives Silver decision-maker inference, spec 05 §5.1).
@@ -64,4 +69,37 @@ PAIN_AXES: dict[str, tuple[str, ...]] = {
     "analytics": ("analytics", "dashboards", "reporting", "bi tool"),
     "data_enrichment": ("data enrichment", "lead enrichment", "contact data"),
     "outbound": ("outbound", "cold email", "sales engagement", "sequencing"),
+}
+
+# Service categories a solicitation may be for -> phrases that identify them.
+# The category becomes the opportunity's intent axis (what they want to buy).
+SERVICE_AXES: dict[str, tuple[str, ...]] = {
+    "web_design": ("website design", "web design", "website designer", "web designer",
+                   "landing page", "product page", "shopify", "webflow", "wordpress",
+                   "ui/ux", "ux designer", "redesign"),
+    "seo": ("seo", "search engine optimization", "organic traffic", "backlinks"),
+    "paid_ads": ("google ads", "paid ads", "ppc", "paid media", "facebook ads",
+                 "meta ads", "performance marketing"),
+    "branding": ("branding", "brand identity", "logo design", "rebrand"),
+    "content": ("copywriter", "copywriting", "content writer", "blog writer",
+                "content marketing"),
+    "video": ("video editor", "video production", "explainer video", "motion graphics"),
+    "development": ("developer", "software agency", "dev agency", "app development",
+                    "mobile app", "custom software"),
+    "crm": ("crm", "hubspot", "salesforce", "pipedrive"),
+    "email_marketing": ("email marketing", "klaviyo", "mailchimp", "newsletter"),
+}
+
+# Service category -> the department that typically owns that purchase (drives the
+# Silver decision-maker suggestion when no specific person is resolved).
+SERVICE_DEPARTMENT: dict[str, str] = {
+    "web_design": "Marketing",
+    "seo": "Marketing",
+    "paid_ads": "Marketing",
+    "branding": "Marketing",
+    "content": "Marketing",
+    "video": "Marketing",
+    "email_marketing": "Marketing",
+    "development": "Engineering",
+    "crm": "Sales",
 }

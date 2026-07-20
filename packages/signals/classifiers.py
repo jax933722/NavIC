@@ -15,6 +15,8 @@ from parsing import ParsedDocument
 from .taxonomy import (
     DEPARTMENT_BY_ROLE,
     PAIN_AXES,
+    SERVICE_AXES,
+    SERVICE_DEPARTMENT,
     SIGNAL_DEFAULT_STRENGTH,
     SignalType,
 )
@@ -37,6 +39,16 @@ _HIRING_RE = re.compile(
 )
 _CHURN_RE = re.compile(
     r"\b(migrat\w+ (from|off)|switch\w* from|moving (from|away from)|replac\w+)\b", re.I
+)
+# Public request for a vendor/service recommendation — an explicit in-market ask.
+_SOLICITATION_RE = re.compile(
+    r"\b(can (?:anyone|someone|somebody) recommend|any (?:recommendations?|recs)\b|"
+    r"looking (?:for|to hire)|in search of|on the hunt for|in the market for|"
+    r"who (?:should i|do you|would you|can) (?:use|recommend|hire)|"
+    r"need (?:help with|(?:a |an )(?:good |great |new |freelance |experienced )?[a-z]{3,})|"
+    r"recommendations? for|does anyone know (?:a |an )?good|"
+    r"trying to find (?:a |an )?|hire (?:a |an )?(?:freelance |good )?)",
+    re.I,
 )
 
 
@@ -111,6 +123,18 @@ def detect_signals(text: str, url: str, apex: str, links_text: str = "") -> list
     if m:
         out.append(_signal(SignalType.PRODUCT_LAUNCH, apex, url, _snippet(text, m),
                            intent_axis="scaling", weak=True))
+
+    # Solicitation: an explicit "can anyone recommend a <service>" style ask. We
+    # only emit when a request phrase AND a recognizable service category co-occur,
+    # so ordinary "looking for feedback / a new role" posts don't false-positive.
+    m = _SOLICITATION_RE.search(lower)
+    if m:
+        category = _find_service(lower)
+        if category:
+            dept = SERVICE_DEPARTMENT.get(category)
+            out.append(_signal(SignalType.SOLICITATION, apex, url, _snippet(text, m),
+                               intent_axis=category, department=dept,
+                               extra={"service": category}))
     return out
 
 
@@ -135,3 +159,11 @@ def _find_tech(text: str) -> str | None:
 
 def _find_all_tech(text: str) -> list[str]:
     return [tech for tech in sorted(KNOWN_TECH) if re.search(rf"\b{re.escape(tech)}\b", text)]
+
+
+def _find_service(text: str) -> str | None:
+    """The service category a solicitation is for (what they want to buy)."""
+    for category, phrases in SERVICE_AXES.items():
+        if any(phrase in text for phrase in phrases):
+            return category
+    return None

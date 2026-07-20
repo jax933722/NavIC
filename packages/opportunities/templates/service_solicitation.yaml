@@ -1,0 +1,8 @@
+id: service_solicitation
+thesis: In-market for a service (public request)
+intent_axis: services
+requires_any_signals: [solicitation]
+min_signals: 1
+suggested_department: Marketing
+suggested_decision_maker_role: [Head of Marketing, VP Marketing, Founder]
+base_intent_weight: 0.9

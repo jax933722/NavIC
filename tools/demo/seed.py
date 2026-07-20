@@ -32,6 +32,9 @@ SAMPLES = [
     ("reddit", "reddit.json"),
     ("producthunt", "producthunt.json"),
     ("linkedin", "linkedin.json"),
+    # A LinkedIn post where the author publicly asks for a vendor — a solicitation
+    # buying signal, which becomes a Gold opportunity (person + role + company + ask).
+    ("linkedin", "linkedin_social.json"),
     ("github_org", "github.json"),
     ("hackernews", "hackernews.json"),
 ]

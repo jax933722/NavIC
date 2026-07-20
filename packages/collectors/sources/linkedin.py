@@ -8,7 +8,10 @@ endpoints under an approved app) or an authorized data export. The input is a
 structured company payload; the collector never bypasses authentication or robots.
 
 From an authorized company profile it emits the company (firmographics), listed
-employees as people (works_at relationship), and hiring signals from open jobs.
+employees as people (works_at relationship), hiring signals from open jobs, and
+buying signals from the company's authored posts — including solicitations, where
+an employee publicly asks for a vendor/service recommendation (the author here IS
+the in-market buyer, so it links to the company and drives a decision-maker match).
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ from extraction import CandidateRecord, EvidenceDraft, build_candidate
 from ingestion import RawResponse
 from normalization import apex_domain
 from parsing import ParsedDocument
+from signals import detect_signals
 from signals.taxonomy import DEPARTMENT_BY_ROLE
 
 from ..base import BaseCollector, Capabilities, CollectorContext, FetchTask
@@ -106,4 +110,11 @@ class LinkedInCollector(BaseCollector):
                                        snippet=f"Hiring: {job.get('title', '')}"[:200],
                                        confidence=0.7),
                 blocking_hints={"apex_domain": apex}))
+        # Authored posts: an employee asking "can anyone recommend a ...?" is an
+        # explicit buying signal attributed to the company (detect_signals handles
+        # funding/hiring/solicitation/etc. uniformly).
+        for post in profile.get("posts", []):
+            text = post.get("text") or ""
+            if text:
+                out.extend(detect_signals(text, post.get("url") or page, apex))
         return out

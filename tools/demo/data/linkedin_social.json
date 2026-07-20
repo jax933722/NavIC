@@ -1,0 +1,24 @@
+{
+  "company": {
+    "name": "Pacini Commerce",
+    "website": "https://pacinicommerce.com",
+    "linkedin_url": "https://www.linkedin.com/company/pacini-commerce",
+    "linkedin_slug": "pacini-commerce",
+    "industry": "E-Commerce",
+    "employee_range": "11-50"
+  },
+  "people": [
+    {
+      "name": "Erika Pacini",
+      "title": "Head of Marketing",
+      "linkedin_url": "https://www.linkedin.com/in/erika-pacini",
+      "linkedin_slug": "erika-pacini"
+    }
+  ],
+  "posts": [
+    {
+      "url": "https://www.linkedin.com/posts/erika-pacini_shopify-webdesign",
+      "text": "Can anyone recommend a website designer who is great at creating on-brand Shopify product pages that convert?"
+    }
+  ]
+}

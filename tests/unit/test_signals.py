@@ -49,3 +49,37 @@ def test_every_signal_has_evidence():
 def test_no_false_positive_on_plain_text():
     cands = detect_signals("We make really good coffee for offices.", "https://x/", "x.com")
     assert cands == []
+
+
+def test_solicitation_detected_with_service_category():
+    # The exact shape of a public "who can I hire" buying request.
+    text = ("Can anyone recommend a website designer who is great at creating "
+            "on-brand Shopify product pages that convert?")
+    cands = detect_signals(text, "https://linkedin/posts/x", "buyer.com")
+    sol = next(c for c in cands if c.signal_type == SignalType.SOLICITATION)
+    assert sol.attributes["intent_axis"] == "web_design"
+    assert sol.attributes["department"] == "Marketing"
+    assert sol.attributes["weak"] is False  # explicit ask -> qualifying, high strength
+    assert sol.attributes["strength"] >= 0.85
+
+
+def test_solicitation_variants():
+    for text, axis in [
+        ("Looking for a great SEO agency to grow organic traffic", "seo"),
+        ("Who should I use for Google Ads / paid media?", "paid_ads"),
+        ("Need a good copywriter for our content marketing", "content"),
+    ]:
+        cands = detect_signals(text, "https://x/", "x.com")
+        assert axis in {c.attributes.get("intent_axis") for c in cands
+                        if c.signal_type == SignalType.SOLICITATION}
+
+
+def test_solicitation_ignores_non_buying_requests():
+    # A request phrase with no service category must NOT create a solicitation.
+    for text in [
+        "Looking for feedback on my new blog post",
+        "I'm looking for a new role in marketing",
+        "Can anyone recommend a good book on leadership?",
+    ]:
+        cands = detect_signals(text, "https://x/", "x.com")
+        assert SignalType.SOLICITATION not in _types(cands)
