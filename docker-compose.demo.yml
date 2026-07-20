@@ -21,9 +21,12 @@ services:
       - "${NAVIC_API_PORT:-8481}:8000"
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)\""]
-      interval: 5s
+      # Poll fast only until first-healthy (start_period), then back off so the
+      # log isn't flooded with /health lines once the API is up.
+      start_period: 40s
+      interval: 30s
       timeout: 3s
-      retries: 20
+      retries: 5
 
   dashboard:
     build:
