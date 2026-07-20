@@ -18,6 +18,7 @@ from .taxonomy import (
     SERVICE_AXES,
     SERVICE_DEPARTMENT,
     SIGNAL_DEFAULT_STRENGTH,
+    SOLICITATION_STACK,
     SignalType,
 )
 
@@ -132,9 +133,9 @@ def detect_signals(text: str, url: str, apex: str, links_text: str = "") -> list
         category = _find_service(lower)
         if category:
             dept = SERVICE_DEPARTMENT.get(category)
+            extra = {"service": category, **_extract_solicitation_meta(text)}
             out.append(_signal(SignalType.SOLICITATION, apex, url, _snippet(text, m),
-                               intent_axis=category, department=dept,
-                               extra={"service": category}))
+                               intent_axis=category, department=dept, extra=extra))
     return out
 
 
@@ -167,3 +168,39 @@ def _find_service(text: str) -> str | None:
         if any(phrase in text for phrase in phrases):
             return category
     return None
+
+
+# Budget: "$2000", "$2,000 USD", "budget: 2000 usd", "€1.5k".
+_BUDGET_RE = re.compile(
+    r"(?:budget[:\s]*)?([$€£]\s?\d[\d,]*(?:\.\d+)?\s?k?|\b\d[\d,]*\s?(?:usd|eur|gbp))",
+    re.IGNORECASE,
+)
+# Timeline: "30 days", "1 month", "2-3 weeks", "Timeline: 30 days".
+_TIMELINE_RE = re.compile(r"\b(\d+(?:\s*[-–]\s*\d+)?)\s*(day|days|week|weeks|month|months)\b",
+                          re.IGNORECASE)
+_ENGAGEMENT_TERMS = ("freelancer", "freelance", "agency", "contractor", "contract",
+                     "consultant", "full-time", "part-time")
+
+
+def _extract_solicitation_meta(text: str) -> dict:
+    """Lift the qualifying details a service request states (budget, timeline,
+    engagement type, remote, tech stack) — what makes the lead actionable."""
+    meta: dict = {}
+    mb = _BUDGET_RE.search(text)
+    if mb:
+        meta["budget"] = mb.group(1).strip()
+    mt = _TIMELINE_RE.search(text)
+    if mt:
+        meta["timeline"] = f"{mt.group(1)} {mt.group(2)}".strip()
+    low = text.lower()
+    engagement = [t for t in _ENGAGEMENT_TERMS if t in low]
+    if engagement:
+        # normalize freelance/freelancer -> one token
+        meta["engagement"] = sorted({"freelance" if e.startswith("freelance") else e
+                                     for e in engagement})
+    if "remote" in low:
+        meta["remote"] = True
+    stack = [t for t in SOLICITATION_STACK if re.search(rf"(?<![a-z]){re.escape(t)}(?![a-z])", low)]
+    if stack:
+        meta["stack"] = stack
+    return meta

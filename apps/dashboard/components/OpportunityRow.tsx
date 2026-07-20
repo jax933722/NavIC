@@ -2,6 +2,24 @@ import type { OpportunityCard } from "@/lib/api";
 import { TierBadge } from "./TierBadge";
 import { EvidenceChip } from "./EvidenceChip";
 
+type Q = NonNullable<OpportunityCard["qualifiers"]>;
+
+function Qualifiers({ q }: { q: Q }) {
+  const parts: string[] = [];
+  if (q.budget) parts.push(`💰 ${q.budget}`);
+  if (q.timeline) parts.push(`⏱ ${q.timeline}`);
+  if (q.engagement?.length) parts.push(q.engagement.join(" / "));
+  if (q.remote) parts.push("Remote");
+  if (q.stack?.length) parts.push(q.stack.slice(0, 6).join(", "));
+  if (parts.length === 0) return null;
+  return (
+    <div className="company" style={{ marginTop: 4, opacity: 0.9 }}>
+      🎯 wants <b>{(q.service ?? "").replace(/_/g, " ")}</b>
+      {parts.length ? ` — ${parts.join(" · ")}` : ""}
+    </div>
+  );
+}
+
 export function OpportunityRow({ opp }: { opp: OpportunityCard }) {
   const pct = Math.round(opp.opportunity_score * 100);
   return (
@@ -23,6 +41,7 @@ export function OpportunityRow({ opp }: { opp: OpportunityCard }) {
               <div className="company">→ suggested: {opp.decision_maker_role}</div>
             )
           )}
+          {opp.qualifiers && <Qualifiers q={opp.qualifiers} />}
         </div>
         <div style={{ textAlign: "right", minWidth: 120 }}>
           <TierBadge tier={opp.tier} />

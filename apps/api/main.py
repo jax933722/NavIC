@@ -64,6 +64,23 @@ def _company_ref(r: RepoBundle, company_id: int) -> CompanyRef:
                       domain=ent.attributes.get("primary_domain"))
 
 
+_QUALIFIER_KEYS = ("service", "budget", "timeline", "engagement", "remote", "stack")
+
+
+def _qualifiers(r: RepoBundle, opp) -> dict | None:
+    """Lift the request's qualifying detail (budget/timeline/stack/...) off the
+    opportunity's primary signal, for solicitation-driven opportunities."""
+    sig_id = getattr(opp, "primary_signal_id", None)
+    if not sig_id:
+        return None
+    signal = next((s for s in r.signals.for_company(opp.company_entity_id) if s.id == sig_id),
+                  None)
+    if signal is None or signal.signal_type != "solicitation":
+        return None
+    out = {k: signal.attributes[k] for k in _QUALIFIER_KEYS if signal.attributes.get(k)}
+    return out or None
+
+
 def _card(r: RepoBundle, opp) -> OpportunityCard:
     person_name = None
     if opp.person_entity_id:
@@ -75,7 +92,8 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
         company=_company_ref(r, opp.company_entity_id),
         opportunity_score=round(opp.opportunity_score, 4),
         department=opp.department, decision_maker_role=opp.decision_maker_role,
-        person_name=person_name, evidence_refs=_evidence_refs(r, opp.evidence_ids),
+        person_name=person_name, qualifiers=_qualifiers(r, opp),
+        evidence_refs=_evidence_refs(r, opp.evidence_ids),
         updated_at=opp.updated_at,
     )
 

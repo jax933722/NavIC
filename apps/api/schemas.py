@@ -32,6 +32,8 @@ class OpportunityCard(BaseModel):
     department: str | None = None
     decision_maker_role: str | None = None
     person_name: str | None = None  # set for Gold (resolved decision maker)
+    # Qualifying detail lifted from a service request (budget, timeline, stack, ...).
+    qualifiers: dict | None = None
     evidence_refs: list[EvidenceRef] = []
     updated_at: datetime
 

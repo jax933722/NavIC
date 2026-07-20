@@ -29,6 +29,14 @@ export interface OpportunityCard {
   department: string | null;
   decision_maker_role: string | null;
   person_name: string | null;
+  qualifiers?: {
+    service?: string;
+    budget?: string;
+    timeline?: string;
+    engagement?: string[];
+    remote?: boolean;
+    stack?: string[];
+  } | null;
   evidence_refs: EvidenceRef[];
   updated_at: string;
 }

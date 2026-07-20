@@ -73,7 +73,19 @@ PAIN_AXES: dict[str, tuple[str, ...]] = {
 
 # Service categories a solicitation may be for -> phrases that identify them.
 # The category becomes the opportunity's intent axis (what they want to buy).
+# Order matters: the first category with a matching phrase wins, so more-specific
+# categories (security, mobile) precede the broad web/dev ones.
 SERVICE_AXES: dict[str, tuple[str, ...]] = {
+    "security": ("malware", "hacked", "penetration test", "pentest", "vulnerability",
+                 "security audit", "cybersecurity", "security expert", "incident response",
+                 "malware removal"),
+    "mobile_app": ("flutter", "react native", "ios app", "android app", "mobile app",
+                   "mobile developer", "mobile application", "app developer",
+                   "app development", "swift", "kotlin"),
+    "web_development": ("web developer", "website development", "e-commerce website",
+                        "ecommerce website", "full stack", "full-stack", "fullstack",
+                        "mern", "mean", "backend", "back-end", "node.js", "django",
+                        "laravel", "rails"),
     "web_design": ("website design", "web design", "website designer", "web designer",
                    "landing page", "product page", "shopify", "webflow", "wordpress",
                    "ui/ux", "ux designer", "redesign"),
@@ -84,8 +96,8 @@ SERVICE_AXES: dict[str, tuple[str, ...]] = {
     "content": ("copywriter", "copywriting", "content writer", "blog writer",
                 "content marketing"),
     "video": ("video editor", "video production", "explainer video", "motion graphics"),
-    "development": ("developer", "software agency", "dev agency", "app development",
-                    "mobile app", "custom software"),
+    "development": ("developer", "software agency", "dev agency", "custom software",
+                    "programmer", "engineer"),
     "crm": ("crm", "hubspot", "salesforce", "pipedrive"),
     "email_marketing": ("email marketing", "klaviyo", "mailchimp", "newsletter"),
 }
@@ -93,6 +105,10 @@ SERVICE_AXES: dict[str, tuple[str, ...]] = {
 # Service category -> the department that typically owns that purchase (drives the
 # Silver decision-maker suggestion when no specific person is resolved).
 SERVICE_DEPARTMENT: dict[str, str] = {
+    "security": "Engineering",
+    "mobile_app": "Engineering",
+    "web_development": "Engineering",
+    "development": "Engineering",
     "web_design": "Marketing",
     "seo": "Marketing",
     "paid_ads": "Marketing",
@@ -100,6 +116,12 @@ SERVICE_DEPARTMENT: dict[str, str] = {
     "content": "Marketing",
     "video": "Marketing",
     "email_marketing": "Marketing",
-    "development": "Engineering",
     "crm": "Sales",
 }
+
+# Known tech tokens to lift from a solicitation (what they want built with).
+SOLICITATION_STACK: tuple[str, ...] = (
+    "flutter", "react native", "react", "node.js", "node", "express", "mongodb",
+    "mern", "mean", "vue", "angular", "next.js", "django", "rails", "laravel",
+    "php", "swift", "kotlin", "ios", "android", "wordpress", "shopify", "webflow",
+)

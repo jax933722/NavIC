@@ -74,6 +74,33 @@ def test_solicitation_variants():
                         if c.signal_type == SignalType.SOLICITATION}
 
 
+def test_solicitation_categorizes_security_and_mobile():
+    sec = detect_signals("Looking for a WordPress Malware Removal Expert to clean a hacked site",
+                         "https://x/", "x.com")
+    assert any(c.attributes["intent_axis"] == "security"
+               for c in sec if c.signal_type == SignalType.SOLICITATION)
+    mob = detect_signals("Looking for an experienced Flutter/App Developer for iOS and Android",
+                         "https://x/", "x.com")
+    assert any(c.attributes["intent_axis"] == "mobile_app"
+               for c in mob if c.signal_type == SignalType.SOLICITATION)
+
+
+def test_solicitation_extracts_qualifying_detail():
+    text = ("Looking for a Web Developer / agency / freelancer to build an e-commerce website. "
+            "Timeline: 30 days. Budget: $2000 USD.")
+    sol = next(c for c in detect_signals(text, "https://x/", "x.com")
+               if c.signal_type == SignalType.SOLICITATION)
+    assert sol.attributes["budget"] == "$2000"
+    assert sol.attributes["timeline"] == "30 days"
+    assert "agency" in sol.attributes["engagement"] and "freelance" in sol.attributes["engagement"]
+
+    mern = next(c for c in detect_signals(
+        "Looking for a MERN developer. MongoDB, Express, React & Node.js. Remote.",
+        "https://x/", "x.com") if c.signal_type == SignalType.SOLICITATION)
+    assert mern.attributes["remote"] is True
+    assert "mern" in mern.attributes["stack"] and "mongodb" in mern.attributes["stack"]
+
+
 def test_solicitation_ignores_non_buying_requests():
     # A request phrase with no service category must NOT create a solicitation.
     for text in [

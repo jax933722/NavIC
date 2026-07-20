@@ -32,9 +32,12 @@ SAMPLES = [
     ("reddit", "reddit.json"),
     ("producthunt", "producthunt.json"),
     ("linkedin", "linkedin.json"),
-    # A LinkedIn post where the author publicly asks for a vendor — a solicitation
-    # buying signal, which becomes a Gold opportunity (person + role + company + ask).
+    # LinkedIn posts where the author publicly asks for a vendor — solicitation
+    # buying signals, which become Gold opportunities (person + role + company + ask).
+    # linkedin_social = a Shopify design request; linkedin_devservices = an
+    # e-commerce build with a stated budget + timeline (extracted onto the signal).
     ("linkedin", "linkedin_social.json"),
+    ("linkedin", "linkedin_devservices.json"),
     ("github_org", "github.json"),
     ("hackernews", "hackernews.json"),
 ]
