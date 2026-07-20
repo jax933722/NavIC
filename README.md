@@ -20,7 +20,7 @@ With Docker installed:
 
 ```bash
 docker compose -f docker-compose.demo.yml up --build
-# then open http://localhost:3000
+# then open http://localhost:8480
 ```
 
 This brings up the API (pre-seeded with realistic multi-source sample data — Gold /

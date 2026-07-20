@@ -60,26 +60,30 @@ lots of log lines scroll by — that's normal. Wait until you see something like
 navic-api-1        | [demo] seeded {'companies': 14, 'signals': 29, 'opportunities': 15} | tiers={'gold': 1, 'silver': 4, 'bronze': 9}
 navic-api-1        | INFO:     Uvicorn running on http://0.0.0.0:8000
 navic-dashboard-1  |   ▲ Next.js 14.2.5
-navic-dashboard-1  |   - Local:        http://localhost:3000
+navic-dashboard-1  |   - Local:        http://localhost:8480
 ```
 
-Now open **<http://localhost:3000>** in your browser.
+> The `8000` / `3000` in those log lines are the ports **inside** the containers.
+> From your browser you use the demo's own ports below (`8480` / `8481`), chosen to
+> avoid clashing with other projects you may run on `3000`, `5173`, or `8000`.
+
+Now open **<http://localhost:8480>** in your browser.
 
 ### What you should see
 
 | Page | URL | What it shows |
 |------|-----|---------------|
-| **Opportunities** | <http://localhost:3000> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. |
-| **Search** | <http://localhost:3000/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
-| **Graph** | <http://localhost:3000/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
-| **Collectors** | <http://localhost:3000/collectors> | All **10 data sources** the platform can pull from (company sites, GitHub, Hacker News, Reddit, Product Hunt, LinkedIn, Greenhouse job boards, news, funding databases, RSS blogs). |
-| **Review** | <http://localhost:3000/review> | The human-in-the-loop queue for borderline "are these the same company/person?" decisions. Empty in the demo (nothing ambiguous). |
+| **Opportunities** | <http://localhost:8480> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. |
+| **Search** | <http://localhost:8480/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
+| **Graph** | <http://localhost:8480/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
+| **Collectors** | <http://localhost:8480/collectors> | All **10 data sources** the platform can pull from (company sites, GitHub, Hacker News, Reddit, Product Hunt, LinkedIn, Greenhouse job boards, news, funding databases, RSS blogs). |
+| **Review** | <http://localhost:8480/review> | The human-in-the-loop queue for borderline "are these the same company/person?" decisions. Empty in the demo (nothing ambiguous). |
 
 You can also hit the API directly:
 
-- Health check: <http://localhost:8000/health>
-- Raw opportunities data: <http://localhost:8000/v1/opportunities>
-- Gold only: <http://localhost:8000/v1/opportunities?tier=gold>
+- Health check: <http://localhost:8481/health>
+- Raw opportunities data: <http://localhost:8481/v1/opportunities>
+- Gold only: <http://localhost:8481/v1/opportunities?tier=gold>
 
 ### Stopping it
 
@@ -148,7 +152,8 @@ docker compose down          # add -v to also delete the stored data
 | Symptom | Fix |
 |---------|-----|
 | `docker: Cannot connect to the Docker daemon` | Docker Desktop isn't running. Start it and wait for the whale icon to settle. |
-| `port is already allocated` (3000 or 8000) | Something else is using that port. Stop it, or change the left-hand number in the `ports:` lines of `docker-compose.demo.yml` (e.g. `3001:3000`) and open the new port. If you change the API port, also update `NEXT_PUBLIC_API_URL` in that file to match. |
-| Dashboard loads but shows *"Failed to load"* | The API container may still be starting. Refresh after a few seconds. Confirm <http://localhost:8000/health> returns `{"status":"ok"}`. |
+| **I open the page and see a *different / older* project** | Another app is already using that port, or your browser cached one. This demo uses **8480 / 8481** specifically to avoid the common ports (3000, 5173, 8000). Make sure you're opening **<http://localhost:8480>** — not 3000. Still stale? Open it in a **private/incognito window** (bypasses cache), or stop the other dev server first. |
+| `port is already allocated` (8480 or 8481) | Even these ports are taken. Pick your own and rebuild: `NAVIC_DASHBOARD_PORT=9480 NAVIC_API_PORT=9481 docker compose -f docker-compose.demo.yml up --build`, then open <http://localhost:9480>. |
+| Dashboard loads but shows *"Failed to load"* | The API container may still be starting. Refresh after a few seconds. Confirm <http://localhost:8481/health> returns `{"status":"ok"}`. |
 | First build is slow | Expected — it downloads base images and installs dependencies once. Subsequent runs are fast. |
 | Want a clean rebuild | `docker compose -f docker-compose.demo.yml build --no-cache` |
