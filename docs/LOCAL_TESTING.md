@@ -73,7 +73,7 @@ Now open **<http://localhost:8480>** in your browser.
 
 | Page | URL | What it shows |
 |------|-----|---------------|
-| **Opportunities** | <http://localhost:8480> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. |
+| **Opportunities** | <http://localhost:8480> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. **▶ Start crawling** turns on the free live collectors on demand (runs a cycle immediately, then keeps pulling until you press **■ Stop**) — not a background daemon. |
 | **Search** | <http://localhost:8480/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
 | **Graph** | <http://localhost:8480/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
 | **Collectors** | <http://localhost:8480/collectors> | All **15 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, the r/forhire monitor, Product Hunt, LinkedIn, Greenhouse / Lever / Ashby / Workable job boards, news, funding databases, RSS blogs). |

@@ -25,6 +25,7 @@ from pipeline import ingest_company_web_urls
 from search import SearchService
 from signals import detect_signals
 
+from .crawler import CrawlerManager
 from .repos import RepoBundle, get_provider
 from .schemas import (
     CaptureRequest,
@@ -49,6 +50,9 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 app.state.provider = get_provider()
+# Operator-controlled crawler (Start/Stop from the dashboard); ingests into the
+# current provider so new leads land on the board live.
+app.state.crawler = CrawlerManager(provider_getter=lambda: app.state.provider)
 
 
 def _evidence_refs(r: RepoBundle, ids: list[int]) -> list[EvidenceRef]:
@@ -464,3 +468,20 @@ async def import_leads(file: UploadFile = File(...)) -> ImportResponse:  # noqa:
     return ImportResponse(rows=len(rows), imported=imported, skipped=skipped,
                           companies=companies, signals=signals, opportunities=opps,
                           row_errors=errors[:50])
+
+
+@app.post("/v1/admin/crawler/start")
+def crawler_start(interval_seconds: int = Query(45, ge=10, le=3600)) -> dict:
+    """Start on-demand crawling: runs a cycle now, then every `interval_seconds` until
+    stopped. Not a background daemon — it only runs while you leave it on."""
+    return app.state.crawler.start(interval=interval_seconds)
+
+
+@app.post("/v1/admin/crawler/stop")
+def crawler_stop() -> dict:
+    return app.state.crawler.stop()
+
+
+@app.get("/v1/admin/crawler/status")
+def crawler_status() -> dict:
+    return app.state.crawler.status()

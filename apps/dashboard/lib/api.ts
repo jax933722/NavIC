@@ -104,3 +104,36 @@ export async function importLeads(file: File): Promise<ImportResponse> {
   }
   return res.json();
 }
+
+export interface CrawlerStatus {
+  running: boolean;
+  started_at: string | null;
+  cycles: number;
+  last_run_at: string | null;
+  interval: number;
+  sources: string[];
+  totals: { companies: number; signals: number; opportunities: number };
+  per_source: Record<string, { ok: boolean; error?: string; opportunities?: number }>;
+  last_error: string | null;
+}
+
+export async function crawlerStatus(): Promise<CrawlerStatus> {
+  const res = await fetch(`${API_URL}/v1/admin/crawler/status`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+export async function crawlerStart(intervalSeconds = 45): Promise<CrawlerStatus> {
+  const res = await fetch(
+    `${API_URL}/v1/admin/crawler/start?interval_seconds=${intervalSeconds}`,
+    { method: "POST" },
+  );
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+export async function crawlerStop(): Promise<CrawlerStatus> {
+  const res = await fetch(`${API_URL}/v1/admin/crawler/stop`, { method: "POST" });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}

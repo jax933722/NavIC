@@ -149,3 +149,42 @@ def test_import_rejects_empty_file():
     client = TestClient(app)
     assert client.post("/v1/admin/import",
                        files={"file": ("empty.csv", b"", "text/csv")}).status_code == 422
+
+
+def test_crawler_start_runs_a_cycle_then_stops(monkeypatch):
+    import time
+    from pathlib import Path
+
+    from apps.api import crawler as crawler_mod
+
+    from ingestion import StubFetchClient
+
+    url = "https://stub.local/hn"
+    body = (Path(__file__).parent.parent
+            / "fixtures/collectors/hn_freelance/search.json").read_text()
+    # Offline: default sources -> one stubbed HN feed; fetch client -> the stub.
+    monkeypatch.setattr(crawler_mod, "_default_sources", lambda: [("hn_freelance", [url])])
+    app.state.provider = InMemoryProvider()
+    app.state.crawler = crawler_mod.CrawlerManager(
+        provider_getter=lambda: app.state.provider,
+        fetch_factory=lambda: StubFetchClient({url: (200, "application/json", body)}))
+    client = TestClient(app)
+
+    assert client.get("/v1/admin/crawler/status").json()["running"] is False
+    assert client.post("/v1/admin/crawler/start",
+                       params={"interval_seconds": 10}).json()["running"] is True
+
+    status = {}
+    for _ in range(30):  # wait for the first cycle (runs in a background thread)
+        status = client.get("/v1/admin/crawler/status").json()
+        if status["cycles"] >= 1:
+            break
+        time.sleep(0.1)
+    assert status["cycles"] >= 1
+    assert status["per_source"]["hn_freelance"]["ok"] is True
+
+    # New leads are live on the board while it runs.
+    board = client.get("/v1/opportunities").json()["data"]
+    assert any(o["company"]["domain"] == "northwindlabs.io" for o in board)
+
+    assert client.post("/v1/admin/crawler/stop").json()["running"] is False
