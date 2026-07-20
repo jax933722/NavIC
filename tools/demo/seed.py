@@ -40,8 +40,9 @@ SAMPLES = [
     ("linkedin", "linkedin_devservices.json"),
     ("github_org", "github.json"),
     ("hackernews", "hackernews.json"),
-    # Automated inbound: HN "Seeking Freelancer" buyer requests -> solicitation leads.
+    # Automated inbound from community hiring boards -> solicitation leads.
     ("hn_freelance", "hn_freelance.json"),
+    ("reddit_forhire", "reddit_forhire.json"),
 ]
 
 # A funding round on the same domain as the LinkedIn company (Wayne Analytics).

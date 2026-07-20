@@ -11,6 +11,7 @@ from . import (  # noqa: F401  (self-register via @register)
     news,
     producthunt,
     reddit,
+    reddit_forhire,
     rss_blog,
 )
 
@@ -26,4 +27,5 @@ __all__ = [
     "news",
     "funding",
     "hn_freelance",
+    "reddit_forhire",
 ]

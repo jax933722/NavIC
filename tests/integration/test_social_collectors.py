@@ -118,6 +118,27 @@ def test_hn_freelance_auto_monitor_yields_buyer_requests():
                if c.entity_type == "company")
 
 
+def test_reddit_forhire_monitor_ingests_only_buyers():
+    body = (FIX / "reddit_forhire/listing.json").read_text()
+    result = _run("reddit_forhire", "https://www.reddit.com/r/forhire/new.json", body)
+
+    companies = {c.attributes.get("primary_domain") for c in result.candidates
+                 if c.entity_type == "company"}
+    # [Hiring] posts that name a company (bare or URL) -> leads.
+    assert {"gearloftgear.com", "cogwheel-labs.io"} <= companies
+    # [For Hire] (a freelancer advertising) is a seller -> never ingested.
+    assert "devportfolio.example" not in companies
+
+    sols = [c for c in result.candidates if c.signal_type == "solicitation"]
+    gear = next(c for c in sols if c.attributes["company_domain"] == "gearloftgear.com")
+    assert gear.attributes["intent_axis"] == "web_design"  # Shopify product pages
+    assert gear.attributes.get("budget") == "$2500"
+
+    # A buyer post with no company link is skipped (nothing to anchor).
+    assert all(c.attributes.get("primary_domain") for c in result.candidates
+               if c.entity_type == "company")
+
+
 def test_linkedin_post_solicitation_becomes_signal():
     # An employee's public "who can I hire?" post is an explicit buying signal
     # attributed to their company (author = in-market buyer).
