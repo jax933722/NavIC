@@ -1,18 +1,21 @@
 """Source collectors. Importing this package registers the built-in collectors."""
 
 from . import (  # noqa: F401  (self-register via @register)
+    ashby,
     company_web,
     funding,
     github,
     greenhouse,
     hackernews,
     hn_freelance,
+    lever,
     linkedin,
     news,
     producthunt,
     reddit,
     reddit_forhire,
     rss_blog,
+    workable,
 )
 
 __all__ = [
@@ -28,4 +31,7 @@ __all__ = [
     "funding",
     "hn_freelance",
     "reddit_forhire",
+    "lever",
+    "ashby",
+    "workable",
 ]

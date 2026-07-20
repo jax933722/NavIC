@@ -28,7 +28,7 @@ Silver / Bronze opportunities) and the dashboard. See
 [docs/LOCAL_TESTING.md](./docs/LOCAL_TESTING.md) for a full, non-technical walkthrough.
 
 To take it from the sample data to **live** sources — what credentials, cost, rate
-limits, and legal footing each of the 12 collectors needs (and why LinkedIn is the
+limits, and legal footing each of the 15 collectors needs (and why LinkedIn is the
 constrained case) — see [docs/GOING_LIVE.md](./docs/GOING_LIVE.md).
 
 ## Documentation

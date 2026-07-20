@@ -1,0 +1,12 @@
+{
+  "company": {"name": "Weyland Corp", "website": "https://weyland.io"},
+  "apiVersion": "1",
+  "jobs": [
+    {"title": "Account Executive", "department": "Sales", "location": "Remote - US",
+     "jobUrl": "https://jobs.ashbyhq.com/weyland/1", "employmentType": "FullTime"},
+    {"title": "Senior Backend Engineer", "team": "Engineering", "location": "Remote",
+     "jobUrl": "https://jobs.ashbyhq.com/weyland/2"},
+    {"title": "Data Analyst", "location": "London, UK",
+     "jobUrl": "https://jobs.ashbyhq.com/weyland/3"}
+  ]
+}

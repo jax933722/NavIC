@@ -9,7 +9,7 @@ There are three paths:
 1. **[Quick demo](#1-quick-demo-one-command)** — one command, no database. Best for
    "show me it works." *(This is the one to start with.)*
 2. **[Run the automated tests](#2-run-the-automated-test-suite)** — proves the code
-   is healthy (the 165 tests).
+   is healthy (the 169 tests).
 3. **[Full stack](#3-full-stack-with-a-real-database-advanced)** — the real Postgres +
    graph + search services. For later, when you want the production-shaped setup.
 
@@ -76,7 +76,7 @@ Now open **<http://localhost:8480>** in your browser.
 | **Opportunities** | <http://localhost:8480> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. |
 | **Search** | <http://localhost:8480/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
 | **Graph** | <http://localhost:8480/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
-| **Collectors** | <http://localhost:8480/collectors> | All **12 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, the r/forhire monitor, Product Hunt, LinkedIn, Greenhouse job boards, news, funding databases, RSS blogs). |
+| **Collectors** | <http://localhost:8480/collectors> | All **15 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, the r/forhire monitor, Product Hunt, LinkedIn, Greenhouse / Lever / Ashby / Workable job boards, news, funding databases, RSS blogs). |
 | **Capture** | <http://localhost:8480/capture> | Paste any post you saw (a vendor request, a funding note) and it becomes an opportunity — the zero-cost, no-scraping way to feed in LinkedIn-style signals by hand. |
 | **Review** | <http://localhost:8480/review> | The human-in-the-loop queue for borderline "are these the same company/person?" decisions. Empty in the demo (nothing ambiguous). |
 
@@ -105,8 +105,8 @@ docker compose -f docker-compose.demo.yml down
 
 ## 2. Run the automated test suite
 
-This proves the engine itself is correct — entity resolution, scoring, tiering, all 12
-collectors, the API. It runs the same 165 tests I run during development, inside Docker,
+This proves the engine itself is correct — entity resolution, scoring, tiering, all 15
+collectors, the API. It runs the same 169 tests I run during development, inside Docker,
 so you don't need Python installed:
 
 ```bash
@@ -114,7 +114,7 @@ docker run --rm -v "$PWD":/app -w /app python:3.11-slim bash -c \
   "pip install -q -e '.[dev]' && python -m pytest -q"
 ```
 
-You should see a line like `165 passed` at the end. (The first run installs
+You should see a line like `169 passed` at the end. (The first run installs
 dependencies, so give it a couple of minutes.)
 
 ---

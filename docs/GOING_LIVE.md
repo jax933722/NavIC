@@ -25,7 +25,8 @@ by how hard they are to turn on.
 | **rss_blog** | none | free | 🟢 ready | Public RSS/Atom feeds |
 | **hackernews** | none | free | 🟢 ready | Official Firebase/Algolia API, no key |
 | **hn_freelance** | none | free | 🟢 ready | Auto-monitors HN "Seeking Freelancer" buyer posts via the free Algolia API |
-| **greenhouse** | none | free | 🟢 ready | Public job-board API; also Lever/Ashby/Workable |
+| **greenhouse** | none | free | 🟢 ready | Public job-board API |
+| **lever / ashby / workable** | none | free | 🟢 ready | Public job-board APIs (same pattern as Greenhouse) |
 | **github** | API key (PAT) | free | 🟢 easy | 5,000 req/hr authenticated |
 | **producthunt** | OAuth token | free | 🟢 easy | Official API v2 (GraphQL) |
 | **reddit** | OAuth app | free tier | 🟡 medium | API terms tightened; commercial use may need an agreement |
