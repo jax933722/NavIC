@@ -37,6 +37,7 @@ export interface OpportunityCard {
     remote?: boolean;
     stack?: string[];
   } | null;
+  contact?: { name?: string | null; email?: string | null; role?: string | null } | null;
   evidence_refs: EvidenceRef[];
   updated_at: string;
 }
@@ -76,6 +77,27 @@ export async function capturedPost(req: CaptureRequest): Promise<CaptureResponse
     headers: { "content-type": "application/json" },
     body: JSON.stringify(req),
   });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `API ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface ImportResponse {
+  rows: number;
+  imported: number;
+  skipped: number;
+  companies: number;
+  signals: number;
+  opportunities: number;
+  row_errors: string[];
+}
+
+export async function importLeads(file: File): Promise<ImportResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/v1/admin/import`, { method: "POST", body: form });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail.detail || `API ${res.status}`);

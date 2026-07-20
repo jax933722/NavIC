@@ -13,6 +13,8 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "fastapi>=0.111",
     "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+    "openpyxl>=3.1",
     "psycopg[binary]>=3.1",
     "pyyaml>=6.0",
 ]

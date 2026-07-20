@@ -77,6 +77,7 @@ Now open **<http://localhost:8480>** in your browser.
 | **Search** | <http://localhost:8480/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
 | **Graph** | <http://localhost:8480/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
 | **Collectors** | <http://localhost:8480/collectors> | All **15 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, the r/forhire monitor, Product Hunt, LinkedIn, Greenhouse / Lever / Ashby / Workable job boards, news, funding databases, RSS blogs). |
+| **Import** | <http://localhost:8480/import> | Upload an Excel/CSV of leads (name, company domain, requirement, email) — each row becomes an opportunity with the requirement classified and the contact kept. |
 | **Capture** | <http://localhost:8480/capture> | Paste any post you saw (a vendor request, a funding note) and it becomes an opportunity — the zero-cost, no-scraping way to feed in LinkedIn-style signals by hand. |
 | **Review** | <http://localhost:8480/review> | The human-in-the-loop queue for borderline "are these the same company/person?" decisions. Empty in the demo (nothing ambiguous). |
 

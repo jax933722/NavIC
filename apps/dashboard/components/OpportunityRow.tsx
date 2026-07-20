@@ -42,6 +42,19 @@ export function OpportunityRow({ opp }: { opp: OpportunityCard }) {
             )
           )}
           {opp.qualifiers && <Qualifiers q={opp.qualifiers} />}
+          {opp.contact && (opp.contact.name || opp.contact.email) && (
+            <div className="company" style={{ marginTop: 4 }}>
+              ✉️ {opp.contact.name ?? "Contact"}
+              {opp.contact.email ? (
+                <>
+                  {" · "}
+                  <a href={`mailto:${opp.contact.email}`}>{opp.contact.email}</a>
+                </>
+              ) : (
+                " · email not provided"
+              )}
+            </div>
+          )}
         </div>
         <div style={{ textAlign: "right", minWidth: 120 }}>
           <TierBadge tier={opp.tier} />

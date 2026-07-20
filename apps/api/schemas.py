@@ -34,6 +34,8 @@ class OpportunityCard(BaseModel):
     person_name: str | None = None  # set for Gold (resolved decision maker)
     # Qualifying detail lifted from a service request (budget, timeline, stack, ...).
     qualifiers: dict | None = None
+    # Best-known contact at the company (name/email/role) — e.g. from an import.
+    contact: dict | None = None
     evidence_refs: list[EvidenceRef] = []
     updated_at: datetime
 
@@ -118,3 +120,13 @@ class CaptureResponse(BaseModel):
     signals: int
     detected_signals: list[str]
     opportunities: list[OpportunityCard]
+
+
+class ImportResponse(BaseModel):
+    rows: int
+    imported: int
+    skipped: int
+    companies: int
+    signals: int
+    opportunities: int
+    row_errors: list[str] = []  # human-readable "row N: <reason>" for skipped rows

@@ -10,9 +10,10 @@ middleware + a tenant filter later (blueprint §27) — no endpoint changes.
 
 from __future__ import annotations
 
+import io
 from datetime import UTC, datetime, timedelta
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.errors import NavicError
@@ -31,6 +32,7 @@ from .schemas import (
     CompanyDetail,
     CompanyRef,
     EvidenceRef,
+    ImportResponse,
     OpportunityCard,
     OpportunityList,
     Page,
@@ -86,6 +88,24 @@ def _qualifiers(r: RepoBundle, opp) -> dict | None:
     return out or None
 
 
+def _contact(r: RepoBundle, company_id: int) -> dict | None:
+    """Best-known contact at the company: a linked person, preferring one with an
+    email (e.g. supplied via import). Returns {name, email, role} or None."""
+    best: dict | None = None
+    for edge in r.edges.in_edges(company_id, "works_at"):
+        person = r.entities.get(edge.src_entity_id)
+        if person is None:
+            continue
+        cand = {"name": person.display_name or person.attributes.get("full_name"),
+                "email": person.attributes.get("email"),
+                "role": (edge.attributes or {}).get("role")
+                or person.attributes.get("current_role")}
+        if cand["email"]:
+            return cand
+        best = best or cand
+    return best
+
+
 def _card(r: RepoBundle, opp) -> OpportunityCard:
     person_name = None
     if opp.person_entity_id:
@@ -98,6 +118,7 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
         opportunity_score=round(opp.opportunity_score, 4),
         department=opp.department, decision_maker_role=opp.decision_maker_role,
         person_name=person_name, qualifiers=_qualifiers(r, opp),
+        contact=_contact(r, opp.company_entity_id),
         evidence_refs=_evidence_refs(r, opp.evidence_ids),
         updated_at=opp.updated_at,
     )
@@ -303,42 +324,59 @@ def seed(req: SeedRequest) -> SeedResponse:
         return SeedResponse(**summary.__dict__)
 
 
-@app.post("/v1/admin/capture", response_model=CaptureResponse)
-def capture(req: CaptureRequest) -> CaptureResponse:
-    """Human-in-the-loop capture: an operator pastes a post they saw and it becomes an
-    evidence-backed opportunity. No scraping — a person chooses each item. Free and
-    fully within source terms (it's just a human submitting text they lawfully read)."""
-    apex = apex_domain(req.company_domain)
+def _lead_candidates(*, text: str, company_domain: str, company_name: str | None = None,
+                     author_name: str | None = None, author_role: str | None = None,
+                     source_url: str | None = None, email: str | None = None) -> tuple:
+    """Build (apex, candidates) for one lead: a company, an optional contact person
+    (with email if supplied), and any buying signals in the text. Shared by the
+    Capture (paste one) and Import (spreadsheet) paths. Returns (None, []) if the
+    company domain doesn't resolve."""
+    apex = apex_domain(company_domain or "")
     if not apex:
-        raise HTTPException(status_code=422,
-                            detail="a valid company website/domain is required (e.g. acme.com)")
-    ev_url = req.source_url or f"https://{apex}"
-    name = req.company_name or apex
-    snippet = req.text.strip()[:200]
+        return None, []
+    ev_url = source_url or f"https://{apex}"
+    name = company_name or apex
+    text = (text or "").strip()
 
     candidates = [build_candidate(
         kind="entity", entity_type="company",
         attributes={"name": name, "display_name": name, "primary_domain": apex,
                     "canonical_key": apex},
         evidence=EvidenceDraft(url=ev_url, claim_type="company.domain",
-                               snippet=snippet, confidence=0.7),
+                               snippet=(text or name)[:200], confidence=0.7),
         blocking_hints={"apex_domain": apex})]
 
-    if req.author_name:
+    if author_name:
+        attrs = {"full_name": author_name, "name": author_name, "current_role": author_role,
+                 "company_apex": apex, "company_domain": apex}
+        if email:
+            attrs["email"] = email
         candidates.append(build_candidate(
-            kind="entity", entity_type="person",
-            attributes={"full_name": req.author_name, "name": req.author_name,
-                        "current_role": req.author_role, "company_apex": apex,
-                        "company_domain": apex},
+            kind="entity", entity_type="person", attributes=attrs,
             evidence=EvidenceDraft(url=ev_url, claim_type="person.role",
-                                   snippet=f"{req.author_name} — {req.author_role or ''}".strip(),
+                                   snippet=f"{author_name} — {author_role or ''}".strip(),
                                    confidence=0.7),
-            blocking_hints={"name": req.author_name, "company_apex": apex}))
+            blocking_hints={"name": author_name, "company_apex": apex}))
 
-    candidates.extend(detect_signals(req.text, ev_url, apex))
+    if text:
+        candidates.extend(detect_signals(text, ev_url, apex))
+    return apex, candidates
+
+
+@app.post("/v1/admin/capture", response_model=CaptureResponse)
+def capture(req: CaptureRequest) -> CaptureResponse:
+    """Human-in-the-loop capture: an operator pastes a post they saw and it becomes an
+    evidence-backed opportunity. No scraping — a person chooses each item. Free and
+    fully within source terms (it's just a human submitting text they lawfully read)."""
+    apex, candidates = _lead_candidates(
+        text=req.text, company_domain=req.company_domain, company_name=req.company_name,
+        author_name=req.author_name, author_role=req.author_role, source_url=req.source_url)
+    if apex is None:
+        raise HTTPException(status_code=422,
+                            detail="a valid company website/domain is required (e.g. acme.com)")
 
     with app.state.provider.bundle() as r:
-        result = r.pipeline.ingest(candidates, content_hash=ev_url)
+        result = r.pipeline.ingest(candidates, content_hash=req.source_url or f"https://{apex}")
         cards = [_card(r, o) for o in result.opportunities]
     return CaptureResponse(
         companies=result.companies,
@@ -346,3 +384,83 @@ def capture(req: CaptureRequest) -> CaptureResponse:
         detected_signals=[c.signal_type for c in candidates if c.kind == "signal"],
         opportunities=cards,
     )
+
+
+# Accepted spreadsheet headers -> canonical field (case/space-insensitive match).
+_IMPORT_HEADERS = {
+    "name": "name", "full name": "name", "fullname": "name", "contact": "name",
+    "contact name": "name", "person": "name",
+    "company domain": "domain", "domain": "domain", "website": "domain",
+    "company": "domain", "company url": "domain", "company website": "domain", "url": "domain",
+    "requirement": "requirement", "requirements": "requirement", "need": "requirement",
+    "request": "requirement", "notes": "requirement", "note": "requirement",
+    "post": "requirement", "description": "requirement", "message": "requirement",
+    "email": "email", "email address": "email", "e-mail": "email", "mail": "email",
+    "role": "role", "title": "role", "job title": "role",
+}
+
+
+def _rows_from_upload(filename: str, blob: bytes) -> list[dict]:
+    """Parse .xlsx or .csv bytes into a list of {name, domain, requirement, email, role}."""
+    name = (filename or "").lower()
+    if name.endswith(".csv") or (not name.endswith(".xlsx") and b"," in blob[:4096]):
+        import csv
+        text = blob.decode("utf-8-sig", errors="replace")
+        reader = csv.reader(io.StringIO(text))
+        table = [list(row) for row in reader]
+    else:
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(blob), read_only=True, data_only=True)
+        ws = wb.active
+        table = [[("" if c is None else str(c)) for c in row]
+                 for row in ws.iter_rows(values_only=True)]
+    if not table:
+        return []
+    header = [(_IMPORT_HEADERS.get((h or "").strip().lower())) for h in table[0]]
+    rows: list[dict] = []
+    for raw in table[1:]:
+        if not any(str(c).strip() for c in raw):
+            continue
+        rec: dict = {}
+        for i, field in enumerate(header):
+            if field and i < len(raw):
+                rec[field] = str(raw[i]).strip()
+        rows.append(rec)
+    return rows
+
+
+@app.post("/v1/admin/import", response_model=ImportResponse)
+async def import_leads(file: UploadFile = File(...)) -> ImportResponse:  # noqa: B008
+    """Bulk import leads from an Excel (.xlsx) or CSV file. Columns (flexible headers):
+    name, company domain, requirement, email (optional), role (optional). Each row's
+    requirement is classified like a captured post; the contact (name/email) is kept."""
+    blob = await file.read()
+    try:
+        rows = _rows_from_upload(file.filename or "", blob)
+    except Exception as exc:  # noqa: BLE001  (surface any parse failure to the operator)
+        raise HTTPException(status_code=422, detail=f"could not read the file: {exc}") from exc
+    if not rows:
+        raise HTTPException(
+            status_code=422,
+            detail="no data rows found — need a header row with a 'company domain' column")
+
+    imported = skipped = companies = signals = opps = 0
+    errors: list[str] = []
+    with app.state.provider.bundle() as r:
+        for n, rec in enumerate(rows, start=2):  # row 1 is the header
+            apex, candidates = _lead_candidates(
+                text=rec.get("requirement", ""), company_domain=rec.get("domain", ""),
+                author_name=rec.get("name"), author_role=rec.get("role"),
+                email=rec.get("email"))
+            if apex is None:
+                skipped += 1
+                errors.append(f"row {n}: missing/invalid company domain")
+                continue
+            result = r.pipeline.ingest(candidates, content_hash=f"import:{apex}:{n}")
+            imported += 1
+            companies += result.companies
+            signals += result.signals
+            opps += len(result.opportunities)
+    return ImportResponse(rows=len(rows), imported=imported, skipped=skipped,
+                          companies=companies, signals=signals, opportunities=opps,
+                          row_errors=errors[:50])

@@ -91,3 +91,61 @@ def test_capture_requires_a_company_domain():
     client = TestClient(app)
     assert client.post("/v1/admin/capture",
                        json={"text": "hi", "company_domain": ""}).status_code == 422
+
+
+def test_import_csv_creates_opportunities_with_contact():
+    app.state.provider = InMemoryProvider()
+    client = TestClient(app)
+    csv = (
+        b"name,company domain,requirement,email\n"
+        b"Priya Nair,brightbrew.co,Looking for a Shopify web designer budget $2000,"
+        b"priya@brightbrew.co\n"
+        b"Jane Roe,acme-io.com,Looking for an SEO agency,\n"
+        b",,no domain here,\n"
+    )
+    resp = client.post("/v1/admin/import", files={"file": ("leads.csv", csv, "text/csv")})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["rows"] == 3 and body["imported"] == 2 and body["skipped"] == 1
+    assert body["row_errors"], "the domain-less row should be reported"
+
+    # The imported contact (name + email) rides on the opportunity card.
+    board = client.get("/v1/opportunities").json()["data"]
+    bright = next(o for o in board if o["company"]["domain"] == "brightbrew.co")
+    assert bright["contact"]["name"] == "Priya Nair"
+    assert bright["contact"]["email"] == "priya@brightbrew.co"
+    assert bright["qualifiers"]["budget"] == "$2000"
+
+
+def test_import_xlsx_is_supported():
+    import io
+
+    import openpyxl
+
+    app.state.provider = InMemoryProvider()
+    client = TestClient(app)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Name", "Company Domain", "Requirement", "Email"])
+    ws.append(["Sam Okafor", "https://umbrella.io/careers",
+               "Need a Flutter developer for iOS and Android", "sam@umbrella.io"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    resp = client.post(
+        "/v1/admin/import",
+        files={"file": ("leads.xlsx", buf.getvalue(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["imported"] == 1
+    board = client.get("/v1/opportunities").json()["data"]
+    # Domain parsed from a full URL; mobile_app category detected.
+    umb = next(o for o in board if o["company"]["domain"] == "umbrella.io")
+    assert umb["contact"]["email"] == "sam@umbrella.io"
+
+
+def test_import_rejects_empty_file():
+    app.state.provider = InMemoryProvider()
+    client = TestClient(app)
+    assert client.post("/v1/admin/import",
+                       files={"file": ("empty.csv", b"", "text/csv")}).status_code == 422
