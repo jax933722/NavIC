@@ -1,0 +1,13 @@
+[
+  {"legal": "RemoteOK API — see https://remoteok.com/api for terms."},
+  {"position": "Senior React Developer", "company": "Globex",
+   "apply_url": "https://globex.io/apply", "url": "https://remoteok.com/remote-jobs/1",
+   "location": "Remote", "tags": ["react", "node"],
+   "description": "We need a React and Node.js developer for our platform."},
+  {"position": "Growth Marketer", "company": "Initech",
+   "apply_url": "https://initech.com/jobs/growth", "url": "https://remoteok.com/remote-jobs/2",
+   "location": "Remote (US)", "tags": ["marketing"], "description": "Own paid + organic growth."},
+  {"position": "Support Rep", "company": "Umbrella",
+   "apply_url": "https://boards.greenhouse.io/umbrella/jobs/9",
+   "url": "https://remoteok.com/remote-jobs/3", "description": "Customer support role."}
+]

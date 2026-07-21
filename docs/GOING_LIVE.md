@@ -27,6 +27,7 @@ by how hard they are to turn on.
 | **hn_freelance** | none | free | 🟢 ready | Auto-monitors HN "Seeking Freelancer" buyer posts via the free Algolia API |
 | **greenhouse** | none | free | 🟢 ready | Public job-board API |
 | **lever / ashby / workable** | none | free | 🟢 ready | Public job-board APIs (same pattern as Greenhouse) |
+| **remoteok / weworkremotely** | none | free | 🟢 ready | Broad remote-hiring feeds (public API / RSS); anchors on the company domain from the apply link |
 | **github** | API key (PAT) | free | 🟢 easy | 5,000 req/hr authenticated |
 | **producthunt** | OAuth token | free | 🟢 easy | Official API v2 (GraphQL) |
 | **reddit** | OAuth app | free tier | 🟡 medium | API terms tightened; commercial use may need an agreement |

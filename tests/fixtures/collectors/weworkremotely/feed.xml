@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>We Work Remotely: Remote Jobs</title>
+    <link>https://weworkremotely.com/remote-jobs</link>
+    <item>
+      <title>Cloudflare: Senior Frontend Engineer</title>
+      <link>https://weworkremotely.com/remote-jobs/cloudflare-senior-frontend-engineer</link>
+      <description>Cloudflare is hiring a Senior Frontend Engineer. Apply at https://cloudflare.com/careers</description>
+      <pubDate>Mon, 06 Jul 2026 10:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Acme Studio: WordPress Developer</title>
+      <link>https://weworkremotely.com/remote-jobs/acme-studio-wordpress-developer</link>
+      <description>We build Shopify and WordPress sites. More at https://acmestudio.co/jobs</description>
+      <pubDate>Tue, 07 Jul 2026 10:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Stealth Startup: Backend Engineer</title>
+      <link>https://weworkremotely.com/remote-jobs/stealth-backend</link>
+      <description>Early-stage startup, details on request. No company link provided.</description>
+      <pubDate>Wed, 08 Jul 2026 10:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

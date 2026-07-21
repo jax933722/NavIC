@@ -9,7 +9,7 @@ There are three paths:
 1. **[Quick demo](#1-quick-demo-one-command)** — one command, no database. Best for
    "show me it works." *(This is the one to start with.)*
 2. **[Run the automated tests](#2-run-the-automated-test-suite)** — proves the code
-   is healthy (the 169 tests).
+   is healthy (the 170 tests).
 3. **[Full stack](#3-full-stack-with-a-real-database-advanced)** — the real Postgres +
    graph + search services. For later, when you want the production-shaped setup.
 
@@ -76,7 +76,7 @@ Now open **<http://localhost:8480>** in your browser.
 | **Opportunities** | <http://localhost:8480> | The ranked board — a **Gold** opportunity (Wayne Analytics, with the decision-maker Lucius Fox), several **Silver**, and **Bronze** early signals. Every card lists the evidence behind it. Use the Gold/Silver/Bronze filter buttons. **▶ Start crawling** turns on the free live collectors on demand (runs a cycle immediately, then keeps pulling until you press **■ Stop**) — not a background daemon. |
 | **Search** | <http://localhost:8480/search> | Click *"companies hiring SDR"*. Notice it prints **`Interpreted as: hiring:Sales`** — it turned plain English into a structured filter — then lists matching companies with evidence. |
 | **Graph** | <http://localhost:8480/graph> | Type `13` and click **Load** to see Wayne Analytics connected to its people by `works_at` relationships — the knowledge graph. |
-| **Collectors** | <http://localhost:8480/collectors> | All **15 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, the r/forhire monitor, Product Hunt, LinkedIn, Greenhouse / Lever / Ashby / Workable job boards, news, funding databases, RSS blogs). |
+| **Collectors** | <http://localhost:8480/collectors> | All **17 data sources** the platform can pull from (company sites, GitHub, Hacker News, the HN "Seeking Freelancer" monitor, Reddit, the r/forhire monitor, Product Hunt, LinkedIn, Greenhouse / Lever / Ashby / Workable job boards, RemoteOK, We Work Remotely, news, funding databases, RSS blogs). |
 | **Sources** | <http://localhost:8480/sources> | Choose exactly which company job boards (Greenhouse/Lever/Ashby/Workable) and feeds the crawler pulls from. Add a target, then **Start crawling** on the board watches only your chosen companies. With nothing added, it falls back to the built-in community monitors. |
 | **Import** | <http://localhost:8480/import> | Upload an Excel/CSV of leads (name, company domain, requirement, email) — each row becomes an opportunity with the requirement classified and the contact kept. |
 | **Capture** | <http://localhost:8480/capture> | Paste any post you saw (a vendor request, a funding note) and it becomes an opportunity — the zero-cost, no-scraping way to feed in LinkedIn-style signals by hand. |
@@ -107,8 +107,8 @@ docker compose -f docker-compose.demo.yml down
 
 ## 2. Run the automated test suite
 
-This proves the engine itself is correct — entity resolution, scoring, tiering, all 15
-collectors, the API. It runs the same 169 tests I run during development, inside Docker,
+This proves the engine itself is correct — entity resolution, scoring, tiering, all 17
+collectors, the API. It runs the same 170 tests I run during development, inside Docker,
 so you don't need Python installed:
 
 ```bash
@@ -116,7 +116,7 @@ docker run --rm -v "$PWD":/app -w /app python:3.11-slim bash -c \
   "pip install -q -e '.[dev]' && python -m pytest -q"
 ```
 
-You should see a line like `169 passed` at the end. (The first run installs
+You should see a line like `170 passed` at the end. (The first run installs
 dependencies, so give it a couple of minutes.)
 
 ---

@@ -14,7 +14,9 @@ from . import (  # noqa: F401  (self-register via @register)
     producthunt,
     reddit,
     reddit_forhire,
+    remoteok,
     rss_blog,
+    weworkremotely,
     workable,
 )
 
@@ -34,4 +36,6 @@ __all__ = [
     "lever",
     "ashby",
     "workable",
+    "remoteok",
+    "weworkremotely",
 ]
