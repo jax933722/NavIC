@@ -13,6 +13,19 @@ import os
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolate_operator_stores(tmp_path):
+    """Give every integration test a clean, temp-file status + seed store so the
+    persisted JSON files don't leak workflow state between tests (or from a real run)."""
+    from apps.api.main import app
+    from apps.api.seedstore import SeedStore
+    from apps.api.statusstore import StatusStore
+
+    app.state.status = StatusStore(str(tmp_path / "status.json"))
+    app.state.seeds = SeedStore(str(tmp_path / "seeds.json"))
+    yield
+
+
 @pytest.fixture
 def db_session():
     if not os.environ.get("NAVIC_DATABASE_URL"):

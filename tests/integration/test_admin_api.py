@@ -151,6 +151,48 @@ def test_import_rejects_empty_file():
                        files={"file": ("empty.csv", b"", "text/csv")}).status_code == 422
 
 
+def test_opportunity_status_queue_workflow(tmp_path):
+    from apps.api.statusstore import StatusStore
+
+    app.state.provider = InMemoryProvider()
+    app.state.status = StatusStore(str(tmp_path / "status.json"))
+    client = TestClient(app)
+    client.post("/v1/admin/capture", json={
+        "text": "Looking for an SEO agency", "company_domain": "acme-io.com",
+        "author_name": "Jane Roe"})
+
+    active = client.get("/v1/opportunities").json()["data"]  # default status=active
+    assert active, "the new lead should be in the active queue"
+    oid = active[0]["id"]
+
+    # mark contacted -> drops off the active queue, shows under contacted
+    set_resp = client.post(f"/v1/opportunities/{oid}/status", params={"status": "contacted"})
+    assert set_resp.status_code == 200 and set_resp.json()["status"] == "contacted"
+    assert all(o["id"] != oid for o in client.get("/v1/opportunities").json()["data"])
+    contacted = client.get("/v1/opportunities?status=contacted").json()["data"]
+    assert any(o["id"] == oid for o in contacted)
+
+    # persistence across a fresh store over the same file
+    assert StatusStore(str(tmp_path / "status.json")).status_of(oid) == "contacted"
+
+    # reopen -> back in the active queue
+    client.post(f"/v1/opportunities/{oid}/status", params={"status": "active"})
+    assert any(o["id"] == oid for o in client.get("/v1/opportunities").json()["data"])
+
+    # status rides on the export too
+    client.post(f"/v1/opportunities/{oid}/status", params={"status": "dismissed"})
+    csv = client.get("/v1/export?tier=all&format=csv").text
+    assert "status" in csv.splitlines()[0]
+    row = next(ln for ln in csv.splitlines()[1:] if "acme-io.com" in ln)
+    assert "dismissed" in row
+
+    # unknown id / bad status
+    assert client.post("/v1/opportunities/99999/status",
+                       params={"status": "contacted"}).status_code == 404
+    assert client.post(f"/v1/opportunities/{oid}/status",
+                       params={"status": "bogus"}).status_code == 422
+
+
 def test_export_csv_and_xlsx():
     import io
 
@@ -169,7 +211,7 @@ def test_export_csv_and_xlsx():
     assert csv.headers["content-type"].startswith("text/csv")
     assert "attachment; filename=" in csv.headers["content-disposition"]
     lines = csv.text.splitlines()
-    assert lines[0].lstrip("﻿").startswith("tier,score,company,domain")
+    assert lines[0].lstrip("﻿").startswith("tier,status,score,company,domain")
     row = next(ln for ln in lines[1:] if "brightbrew.co" in ln)
     assert "$2000" in row and "Priya Nair" in row and "web_design" in row
 

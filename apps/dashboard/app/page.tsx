@@ -9,11 +9,13 @@ import {
   fetchOpportunities,
   type CrawlerStatus,
   type OpportunityCard,
+  type StatusFilter,
   type TierFilter,
 } from "@/lib/api";
 import { OpportunityRow } from "@/components/OpportunityRow";
 
 const TIERS: TierFilter[] = ["all", "gold", "silver", "bronze"];
+const STATUSES: StatusFilter[] = ["active", "contacted", "dismissed", "all"];
 
 function CrawlerControl({ onData }: { onData: () => void }) {
   const [status, setStatus] = useState<CrawlerStatus | null>(null);
@@ -87,17 +89,18 @@ function CrawlerControl({ onData }: { onData: () => void }) {
 
 export default function DashboardPage() {
   const [tier, setTier] = useState<TierFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("active");
   const [opps, setOpps] = useState<OpportunityCard[]>([]);
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
 
   const load = useCallback(() => {
-    fetchOpportunities(tier)
+    fetchOpportunities(tier, status)
       .then((res) => {
         setOpps(res.data);
         setState("ok");
       })
       .catch(() => setState("error"));
-  }, [tier]);
+  }, [tier, status]);
 
   useEffect(() => {
     setState("loading");
@@ -133,6 +136,19 @@ export default function DashboardPage() {
         </a>
       </div>
 
+      <div className="tierbar" style={{ marginTop: -6 }}>
+        <span className="sub" style={{ margin: "0 4px 0 0" }}>Queue:</span>
+        {STATUSES.map((s) => (
+          <button
+            key={s}
+            className={`tierbtn ${s === status ? "active" : ""}`}
+            onClick={() => setStatus(s)}
+          >
+            {s[0].toUpperCase() + s.slice(1)}
+          </button>
+        ))}
+      </div>
+
       {state === "loading" && <div className="empty">Loading…</div>}
       {state === "error" && (
         <div className="error">
@@ -142,10 +158,15 @@ export default function DashboardPage() {
       )}
       {state === "ok" && opps.length === 0 && (
         <div className="empty">
-          No opportunities yet. Press <b>Start crawling</b> above, or add some via Import / Capture.
+          {status === "active"
+            ? "No active leads here. Press Start crawling above, add some via Import / Capture, or check the Contacted / Dismissed queues."
+            : `Nothing ${status} yet.`}
         </div>
       )}
-      {state === "ok" && opps.map((opp) => <OpportunityRow key={opp.id} opp={opp} />)}
+      {state === "ok" &&
+        opps.map((opp) => (
+          <OpportunityRow key={opp.id} opp={opp} onStatusChange={load} />
+        ))}
     </main>
   );
 }

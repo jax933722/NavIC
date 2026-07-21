@@ -48,6 +48,8 @@ from .schemas import (
     TransitionOut,
 )
 from .seedstore import SeedStore
+from .statusstore import VALID as VALID_STATUSES
+from .statusstore import StatusStore
 
 app = FastAPI(title="NavIC API", version="0.1.0")
 app.add_middleware(
@@ -59,6 +61,7 @@ app.state.provider = get_provider()
 # community monitors when none are set; ingests into the current provider so new
 # leads land on the board live.
 app.state.seeds = SeedStore()
+app.state.status = StatusStore()  # per-opportunity workflow status (queue)
 app.state.crawler = CrawlerManager(
     provider_getter=lambda: app.state.provider,
     seeds_provider=lambda: app.state.seeds.list())
@@ -125,6 +128,7 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
         person = r.entities.get(opp.person_entity_id)
         if person:
             person_name = person.display_name or person.attributes.get("full_name")
+    entry = app.state.status.entry_of(opp.id) or {}
     return OpportunityCard(
         id=opp.id, tier=opp.tier, thesis=opp.thesis,
         company=_company_ref(r, opp.company_entity_id),
@@ -132,6 +136,7 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
         department=opp.department, decision_maker_role=opp.decision_maker_role,
         person_name=person_name, qualifiers=_qualifiers(r, opp),
         contact=_contact(r, opp.company_entity_id),
+        status=entry.get("status", "active"), status_note=entry.get("note"),
         evidence_refs=_evidence_refs(r, opp.evidence_ids),
         updated_at=opp.updated_at,
     )
@@ -143,10 +148,10 @@ def health() -> dict:
 
 
 _EXPORT_COLUMNS = [
-    "tier", "score", "company", "domain", "thesis", "department", "decision_maker_role",
-    "person", "service", "budget", "timeline", "engagement", "remote", "stack",
-    "contact_name", "contact_email", "contact_role", "evidence_url", "evidence_count",
-    "updated_at",
+    "tier", "status", "score", "company", "domain", "thesis", "department",
+    "decision_maker_role", "person", "service", "budget", "timeline", "engagement",
+    "remote", "stack", "contact_name", "contact_email", "contact_role", "evidence_url",
+    "evidence_count", "updated_at",
 ]
 
 
@@ -155,7 +160,7 @@ def _export_row(c: OpportunityCard) -> dict:
     contact = c.contact or {}
     ev = c.evidence_refs
     return {
-        "tier": c.tier, "score": c.opportunity_score,
+        "tier": c.tier, "status": c.status, "score": c.opportunity_score,
         "company": c.company.name or "", "domain": c.company.domain or "",
         "thesis": c.thesis or "", "department": c.department or "",
         "decision_maker_role": c.decision_maker_role or "", "person": c.person_name or "",
@@ -216,12 +221,36 @@ def export_board(
 @app.get("/v1/opportunities", response_model=OpportunityList)
 def list_opportunities(
     tier: str = Query("all", pattern="^(all|gold|silver|bronze)$"),
+    status: str = Query("active", pattern="^(active|contacted|dismissed|all)$"),
     limit: int = Query(50, ge=1, le=200),
 ) -> OpportunityList:
+    """The working queue. `status` defaults to `active` (hides contacted/dismissed);
+    pass `contacted`, `dismissed`, or `all` to review what you've actioned."""
     with app.state.provider.bundle() as r:
-        rows = r.opportunities.list(tier=tier)[:limit]
+        rows = r.opportunities.list(tier=tier)
+        if status != "all":
+            rows = [o for o in rows if app.state.status.status_of(o.id) == status]
+        rows = rows[:limit]
         return OpportunityList(data=[_card(r, x) for x in rows],
                                page=Page(has_more=False, limit=limit))
+
+
+@app.post("/v1/opportunities/{opportunity_id}/status", response_model=OpportunityCard)
+def set_opportunity_status(
+    opportunity_id: int,
+    status: str = Query(..., pattern="^(active|contacted|dismissed)$"),
+    note: str | None = Query(None),
+) -> OpportunityCard:
+    """Mark an opportunity contacted/dismissed (drops it off the active queue), or
+    active again (returns it). Returns the updated card."""
+    if status not in VALID_STATUSES:
+        raise HTTPException(status_code=422, detail="invalid status")
+    with app.state.provider.bundle() as r:
+        opp = r.opportunities.get(opportunity_id)
+        if opp is None:
+            raise HTTPException(status_code=404, detail="opportunity not found")
+        app.state.status.set(opportunity_id, status, note)
+        return _card(r, opp)
 
 
 @app.get("/v1/opportunities/{opportunity_id}", response_model=OpportunityCard)

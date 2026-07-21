@@ -1,4 +1,4 @@
-import type { OpportunityCard } from "@/lib/api";
+import { setOpportunityStatus, type OpportunityCard } from "@/lib/api";
 import { TierBadge } from "./TierBadge";
 import { EvidenceChip } from "./EvidenceChip";
 
@@ -20,10 +20,23 @@ function Qualifiers({ q }: { q: Q }) {
   );
 }
 
-export function OpportunityRow({ opp }: { opp: OpportunityCard }) {
+export function OpportunityRow({
+  opp,
+  onStatusChange,
+}: {
+  opp: OpportunityCard;
+  onStatusChange?: () => void;
+}) {
   const pct = Math.round(opp.opportunity_score * 100);
+  const status = opp.status ?? "active";
+
+  async function mark(next: "active" | "contacted" | "dismissed") {
+    await setOpportunityStatus(opp.id, next);
+    onStatusChange?.();
+  }
+
   return (
-    <div className="card">
+    <div className="card" style={status !== "active" ? { opacity: 0.6 } : undefined}>
       <div className="row">
         <div>
           <div className="thesis">{opp.thesis ?? "Opportunity"}</div>
@@ -71,6 +84,31 @@ export function OpportunityRow({ opp }: { opp: OpportunityCard }) {
           ))}
         </div>
       )}
+      <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
+        {status === "active" ? (
+          <>
+            <button
+              className="tierbtn"
+              style={{ color: "#3fb950", borderColor: "#3fb950" }}
+              onClick={() => mark("contacted")}
+            >
+              ✓ Contacted
+            </button>
+            <button className="tierbtn" onClick={() => mark("dismissed")}>
+              ✕ Dismiss
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="sub" style={{ margin: 0, textTransform: "capitalize" }}>
+              {status === "contacted" ? "✓ Contacted" : "✕ Dismissed"}
+            </span>
+            <button className="tierbtn" onClick={() => mark("active")}>
+              ↩ Reopen
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

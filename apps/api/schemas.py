@@ -36,6 +36,9 @@ class OpportunityCard(BaseModel):
     qualifiers: dict | None = None
     # Best-known contact at the company (name/email/role) — e.g. from an import.
     contact: dict | None = None
+    # Workflow status: active (default) | contacted | dismissed, + an optional note.
+    status: str = "active"
+    status_note: str | None = None
     evidence_refs: list[EvidenceRef] = []
     updated_at: datetime
 

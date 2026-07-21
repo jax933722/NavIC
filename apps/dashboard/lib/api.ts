@@ -38,6 +38,8 @@ export interface OpportunityCard {
     stack?: string[];
   } | null;
   contact?: { name?: string | null; email?: string | null; role?: string | null } | null;
+  status?: "active" | "contacted" | "dismissed";
+  status_note?: string | null;
   evidence_refs: EvidenceRef[];
   updated_at: string;
 }
@@ -47,12 +49,27 @@ export interface OpportunityList {
   page: { next_cursor: string | null; has_more: boolean; limit: number };
 }
 
-export async function fetchOpportunities(tier: TierFilter): Promise<OpportunityList> {
-  const res = await fetch(`${API_URL}/v1/opportunities?tier=${tier}`, {
+export type StatusFilter = "active" | "contacted" | "dismissed" | "all";
+
+export async function fetchOpportunities(
+  tier: TierFilter,
+  status: StatusFilter = "active",
+): Promise<OpportunityList> {
+  const res = await fetch(`${API_URL}/v1/opportunities?tier=${tier}&status=${status}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
+}
+
+export async function setOpportunityStatus(
+  id: number,
+  status: "active" | "contacted" | "dismissed",
+): Promise<void> {
+  const res = await fetch(`${API_URL}/v1/opportunities/${id}/status?status=${status}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
 }
 
 export interface CaptureRequest {
