@@ -57,7 +57,7 @@ export async function fetchOpportunities(
   status: StatusFilter = "active",
 ): Promise<OpportunityList> {
   const res = await fetch(
-    `${API_URL}/v1/opportunities?tier=${tier}&status=${status}&limit=200`,
+    `${API_URL}/v1/opportunities?tier=${tier}&status=${status}&limit=2000`,
     { cache: "no-store" },
   );
   if (!res.ok) throw new Error(`API ${res.status}`);

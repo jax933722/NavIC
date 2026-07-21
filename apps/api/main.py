@@ -83,8 +83,12 @@ def _company_ref(r: RepoBundle, company_id: int) -> CompanyRef:
     ent = r.entities.get(company_id)
     if ent is None:
         return CompanyRef(id=company_id, name=None, domain=None)
+    # Name-anchored leads (no website found yet) carry a synthetic key in
+    # primary_domain — don't show it as if it were a real domain.
+    domain = None if ent.attributes.get("anchor_kind") == "name" \
+        else ent.attributes.get("primary_domain")
     return CompanyRef(id=ent.id, name=ent.display_name or ent.attributes.get("name"),
-                      domain=ent.attributes.get("primary_domain"))
+                      domain=domain)
 
 
 _QUALIFIER_KEYS = ("service", "budget", "timeline", "engagement", "remote", "stack")
@@ -229,7 +233,7 @@ def export_board(
 def list_opportunities(
     tier: str = Query("all", pattern="^(all|gold|silver|bronze)$"),
     status: str = Query("active", pattern="^(active|contacted|dismissed|all)$"),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=5000),
 ) -> OpportunityList:
     """The working queue. `status` defaults to `active` (hides contacted/dismissed);
     pass `contacted`, `dismissed`, or `all` to review what you've actioned."""

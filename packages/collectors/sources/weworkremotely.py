@@ -19,7 +19,7 @@ from signals import detect_signals
 from ..base import BaseCollector, Capabilities, CollectorContext, FetchTask
 from ..jobboard import department_for
 from ..registry import register
-from ..textutil import first_external_domain
+from ..textutil import company_slug, first_external_domain
 from .remoteok import NON_COMPANY_HOSTS
 
 
@@ -59,24 +59,28 @@ class WeWorkRemotelyCollector(BaseCollector):
             role = (role or company_name).strip()
             company_name = company_name.strip()
             apex = first_external_domain(f"{summary} {link}", exclude=NON_COMPANY_HOSTS)
-            if not apex:
-                continue
             company = company_name or apex
+            # Keep the lead even without a website: anchor on the company name.
+            anchor, anchor_kind = (apex, "domain") if apex \
+                else (company_slug(company or ""), "name")
+            if not anchor:
+                continue
+            ev_url = link or (f"https://{apex}" if apex else "https://weworkremotely.com")
             dept = department_for(role, None)
             out.append(build_candidate(
                 kind="entity", entity_type="company",
-                attributes={"name": company, "display_name": company, "primary_domain": apex,
-                            "canonical_key": apex},
-                evidence=EvidenceDraft(url=link or f"https://{apex}", claim_type="company.domain",
+                attributes={"name": company, "display_name": company, "primary_domain": anchor,
+                            "canonical_key": anchor, "anchor_kind": anchor_kind},
+                evidence=EvidenceDraft(url=ev_url, claim_type="company.domain",
                                        snippet=title[:200], confidence=0.6),
-                blocking_hints={"apex_domain": apex}))
+                blocking_hints={"apex_domain": anchor}))
             out.append(build_candidate(
                 kind="signal", signal_type="hiring",
-                attributes={"company_domain": apex, "intent_axis": "hiring", "department": dept,
+                attributes={"company_domain": anchor, "intent_axis": "hiring", "department": dept,
                             "strength": 0.6, "weak": dept is None, "role": role,
                             "location": "Remote"},
-                evidence=EvidenceDraft(url=link or f"https://{apex}", claim_type="signal.hiring",
+                evidence=EvidenceDraft(url=ev_url, claim_type="signal.hiring",
                                        snippet=f"Hiring (remote): {role}"[:200], confidence=0.65),
-                blocking_hints={"apex_domain": apex}))
-            out.extend(detect_signals(f"{role}. {summary}", link or f"https://{apex}", apex))
+                blocking_hints={"apex_domain": anchor}))
+            out.extend(detect_signals(f"{role}. {summary}", ev_url, anchor))
         return out

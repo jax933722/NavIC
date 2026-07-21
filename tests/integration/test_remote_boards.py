@@ -37,10 +37,14 @@ def test_remoteok_anchors_on_company_domain_from_apply_url():
     companies = {c.attributes.get("primary_domain") for c in result.candidates
                  if c.entity_type == "company"}
     assert {"globex.io", "initech.com"} <= companies
-    # The legal-notice element is not a job; a role whose only link is an ATS host
-    # (greenhouse) can't be anchored to the company -> skipped.
+    # We never anchor to the aggregator or an ATS host as if it were the company.
     assert "boards.greenhouse.io" not in companies and "greenhouse.io" not in companies
     assert "remoteok.com" not in companies
+    # A role with only an ATS apply link (no company site) is still KEPT, anchored by
+    # the company name (marked so the UI shows no website).
+    name_only = [c for c in result.candidates
+                 if c.entity_type == "company" and c.attributes.get("anchor_kind") == "name"]
+    assert any(c.attributes.get("name") == "Umbrella" for c in name_only)
 
     hiring = {c.attributes.get("department") for c in result.candidates
               if c.signal_type == "hiring"}
@@ -53,8 +57,9 @@ def test_weworkremotely_parses_company_role_and_domain():
     companies = {c.attributes.get("primary_domain") for c in result.candidates
                  if c.entity_type == "company"}
     assert {"cloudflare.com", "acmestudio.co"} <= companies
-    # No company link in the third item -> skipped; WWR host never anchors.
     assert "weworkremotely.com" not in companies
     names = {c.attributes.get("name") for c in result.candidates if c.entity_type == "company"}
     assert "Cloudflare" in names  # "Company: Role" split
+    # The third item has no company link -> kept as a name-only lead (not dropped).
+    assert "Stealth Startup" in names
     assert all(c.evidence and c.evidence.url for c in result.candidates)

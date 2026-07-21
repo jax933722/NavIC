@@ -24,7 +24,7 @@ from signals import detect_signals
 from ..base import BaseCollector, Capabilities, CollectorContext, FetchTask
 from ..jobboard import department_for
 from ..registry import register
-from ..textutil import first_external_domain
+from ..textutil import company_slug, first_external_domain
 
 # Aggregator + applicant-tracking hosts that are never the company's own domain.
 NON_COMPANY_HOSTS = {
@@ -64,27 +64,33 @@ class RemoteOKCollector(BaseCollector):
         for job in doc.structured.get("jobs", []):
             links = f"{job.get('apply_url', '')} {job.get('company_url', '')} {job.get('url', '')}"
             apex = first_external_domain(links, exclude=NON_COMPANY_HOSTS)
-            if not apex:
-                continue
             title = job.get("position", "")
             company = job.get("company") or apex
-            evidence_url = job.get("url") or job.get("apply_url") or f"https://{apex}"
+            # Anchor on the real domain if we have one; otherwise keep the lead by
+            # anchoring on the company name (marked so the UI shows no website).
+            anchor, anchor_kind = (apex, "domain") if apex \
+                else (company_slug(company or ""), "name")
+            if not anchor:
+                continue
+            evidence_url = job.get("url") or job.get("apply_url") or (
+                f"https://{apex}" if apex else "https://remoteok.com")
             dept = department_for(title, None)
             out.append(build_candidate(
                 kind="entity", entity_type="company",
-                attributes={"name": company, "display_name": company, "primary_domain": apex,
-                            "canonical_key": apex},
+                attributes={"name": company, "display_name": company, "primary_domain": anchor,
+                            "canonical_key": anchor, "anchor_kind": anchor_kind},
                 evidence=EvidenceDraft(url=evidence_url, claim_type="company.domain",
                                        snippet=f"{company} — {title}"[:200], confidence=0.6),
-                blocking_hints={"apex_domain": apex}))
+                blocking_hints={"apex_domain": anchor}))
             out.append(build_candidate(
                 kind="signal", signal_type="hiring",
-                attributes={"company_domain": apex, "intent_axis": "hiring", "department": dept,
+                attributes={"company_domain": anchor, "intent_axis": "hiring", "department": dept,
                             "strength": 0.6, "weak": dept is None, "role": title,
                             "location": job.get("location") or "Remote"},
                 evidence=EvidenceDraft(url=evidence_url, claim_type="signal.hiring",
                                        snippet=f"Hiring (remote): {title}"[:200], confidence=0.65),
-                blocking_hints={"apex_domain": apex}))
+                blocking_hints={"apex_domain": anchor}))
             # Also surface an explicit service request in the description, if any.
-            out.extend(detect_signals(f"{title}. {job.get('description', '')}", evidence_url, apex))
+            desc = job.get("description", "")
+            out.extend(detect_signals(f"{title}. {desc}", evidence_url, anchor))
         return out

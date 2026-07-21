@@ -27,6 +27,13 @@ def strip_html(text: str) -> str:
     return _TAG_RE.sub(" ", html.unescape(text or "")).strip()
 
 
+def company_slug(name: str) -> str:
+    """A stable key for a company we know by NAME but not domain (aggregator posts).
+    Lets such leads still be captured + de-duped by name. Empty if unusable."""
+    slug = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
+    return slug[:60]
+
+
 def first_external_domain(raw: str, exclude: Iterable[str] = ()) -> str | None:
     """First real external apex domain in `raw` (full URL preferred, else bare),
     skipping any host in `exclude` (e.g. the platform's own domains)."""
