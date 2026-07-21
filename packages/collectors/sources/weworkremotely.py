@@ -31,7 +31,14 @@ class WeWorkRemotelyCollector(BaseCollector):
     capabilities = Capabilities(supports_incremental=True, politeness_class="standard")
 
     def __init__(self, seeds: list[str] | None = None):
-        self._seeds = seeds or ["https://weworkremotely.com/remote-jobs.rss"]
+        self._seeds = seeds or [
+            "https://weworkremotely.com/remote-jobs.rss",
+            "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+            "https://weworkremotely.com/categories/remote-design-jobs.rss",
+            "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss",
+            "https://weworkremotely.com/categories/remote-sales-and-marketing-jobs.rss",
+            "https://weworkremotely.com/categories/remote-customer-support-jobs.rss",
+        ]
 
     def plan(self, ctx: CollectorContext) -> Iterable[FetchTask]:
         for url in self._seeds:

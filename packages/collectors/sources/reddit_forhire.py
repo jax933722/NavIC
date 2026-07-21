@@ -27,15 +27,25 @@ from ..registry import register
 from ..textutil import first_external_domain
 
 _SELF_HOSTS = {"reddit.com", "redd.it", "redditmedia.com", "imgur.com"}
+# Subreddits whose posts are employer/job listings by default (no "[Hiring]" tag
+# convention) — everything there is buyer-side unless flagged "[For Hire]".
+_EMPLOYER_SUBS = {"jobbit", "hiring", "remotejs", "programmingjobs"}
 
 
 def _is_buyer(post: dict) -> bool:
-    """True for employer/buyer posts ("[Hiring]"), False for "[For Hire]" sellers."""
+    """True for employer/buyer posts, False for "[For Hire]" (freelancers advertising).
+
+    A post is a buyer if it's tagged "[Hiring]", OR it's from an employer-listing
+    subreddit — but an explicit "[For Hire]" always wins as a seller.
+    """
     flair = (post.get("link_flair_text") or "").strip().lower()
     title = (post.get("title") or "").lower()
+    sub = (post.get("subreddit") or "").strip().lower()
     if "for hire" in flair or "[for hire]" in title:
         return False
-    return flair == "hiring" or "[hiring]" in title
+    if flair == "hiring" or "[hiring]" in title:
+        return True
+    return sub in _EMPLOYER_SUBS
 
 
 @register
@@ -52,6 +62,10 @@ class RedditForHireCollector(BaseCollector):
         self._seeds = seeds or [
             "https://www.reddit.com/r/forhire/new.json?limit=100",
             "https://www.reddit.com/r/DesignJobs/new.json?limit=100",
+            "https://www.reddit.com/r/HireaWriter/new.json?limit=100",
+            "https://www.reddit.com/r/freelance_forhire/new.json?limit=100",
+            "https://www.reddit.com/r/jobbit/new.json?limit=100",
+            "https://www.reddit.com/r/hiring/new.json?limit=100",
         ]
 
     def plan(self, ctx: CollectorContext) -> Iterable[FetchTask]:

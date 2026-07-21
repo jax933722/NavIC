@@ -139,6 +139,30 @@ def test_reddit_forhire_monitor_ingests_only_buyers():
                if c.entity_type == "company")
 
 
+def test_reddit_forhire_is_buyer_covers_employer_subs():
+    from collectors.sources.reddit_forhire import _is_buyer
+
+    assert _is_buyer({"title": "[Hiring] Need a dev", "subreddit": "forhire"}) is True
+    assert _is_buyer({"title": "[For Hire] Available dev", "subreddit": "forhire"}) is False
+    # Employer-listing subs have no "[Hiring]" tag but are buyer-side by default.
+    assert _is_buyer({"title": "Senior Go Engineer", "subreddit": "jobbit"}) is True
+    # ...unless the poster explicitly marks it For Hire.
+    assert _is_buyer({"title": "[For Hire] Go dev", "subreddit": "jobbit"}) is False
+    # A random sub with no hiring marker is not assumed to be a buyer.
+    assert _is_buyer({"title": "Cool project", "subreddit": "programming"}) is False
+
+
+def test_default_feeds_are_broadened():
+    from collectors.sources.reddit_forhire import RedditForHireCollector
+    from collectors.sources.weworkremotely import WeWorkRemotelyCollector
+
+    # Fresh instances carry the broadened out-of-the-box seed lists.
+    reddit_subs = RedditForHireCollector()._seeds
+    assert len(reddit_subs) >= 5 and any("jobbit" in u for u in reddit_subs)
+    wwr = WeWorkRemotelyCollector()._seeds
+    assert len(wwr) >= 5 and any("categories/remote-programming" in u for u in wwr)
+
+
 def test_linkedin_post_solicitation_becomes_signal():
     # An employee's public "who can I hire?" post is an explicit buying signal
     # attributed to their company (author = in-market buyer).
