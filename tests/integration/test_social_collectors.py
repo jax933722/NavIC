@@ -139,6 +139,25 @@ def test_reddit_forhire_monitor_ingests_only_buyers():
                if c.entity_type == "company")
 
 
+def test_hn_search_surfaces_requirement_posts_no_key():
+    # The key-less requirement firehose (Hacker News Algolia search).
+    body = (FIX / "hn_search/search.json").read_text()
+    result = _run("hn_search", "https://hn.algolia.com/api/v1/search?query=x", body)
+
+    sols = [c for c in result.candidates if c.signal_type == "solicitation"]
+    axes = {c.attributes.get("intent_axis") for c in sols}
+    assert "development" in axes and "seo" in axes  # "React developer", "SEO agency"
+
+    companies = {c.attributes.get("name") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert "acme-hq.com" in companies      # domain named in the post
+    assert "hn/maker_b" in companies       # individual with no company link -> poster
+    # Off-topic "looking for a book" is not a service request -> dropped.
+    assert not any("book" in (c.evidence.snippet or "").lower() for c in result.candidates)
+    acme = next(c for c in sols if c.attributes["company_domain"] == "acme-hq.com")
+    assert acme.attributes.get("budget") == "$8k"
+
+
 def test_reddit_search_surfaces_requirement_posts():
     # "People posted what they need" — kept only when it's an actual service request.
     body = (FIX / "reddit_search/search.json").read_text()
