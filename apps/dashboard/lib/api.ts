@@ -40,6 +40,7 @@ export interface OpportunityCard {
   contact?: { name?: string | null; email?: string | null; role?: string | null } | null;
   status?: "active" | "contacted" | "dismissed";
   status_note?: string | null;
+  sources?: string[];
   evidence_refs: EvidenceRef[];
   updated_at: string;
 }

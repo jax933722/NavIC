@@ -55,6 +55,18 @@ export function OpportunityRow({
             )
           )}
           {opp.qualifiers && <Qualifiers q={opp.qualifiers} />}
+          {opp.sources && opp.sources.length > 0 && (
+            <div className="company" style={{ marginTop: 4 }}>
+              {opp.sources.length > 1 ? (
+                <b style={{ color: "#3fb950" }}>
+                  🔗 corroborated by {opp.sources.length} sources:
+                </b>
+              ) : (
+                <>🔗 source:</>
+              )}{" "}
+              <span className="mono">{opp.sources.join(", ")}</span>
+            </div>
+          )}
           {opp.contact && (opp.contact.name || opp.contact.email) && (
             <div className="company" style={{ marginTop: 4 }}>
               ✉️ {opp.contact.name ?? "Contact"}

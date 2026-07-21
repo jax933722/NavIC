@@ -39,6 +39,8 @@ class OpportunityCard(BaseModel):
     # Workflow status: active (default) | contacted | dismissed, + an optional note.
     status: str = "active"
     status_note: str | None = None
+    # Distinct source domains backing this lead (cross-source corroboration).
+    sources: list[str] = []
     evidence_refs: list[EvidenceRef] = []
     updated_at: datetime
 

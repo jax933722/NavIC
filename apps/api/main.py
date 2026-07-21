@@ -129,6 +129,12 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
         if person:
             person_name = person.display_name or person.attributes.get("full_name")
     entry = app.state.status.entry_of(opp.id) or {}
+    evidence = _evidence_refs(r, opp.evidence_ids)
+    sources: list[str] = []
+    for ev in evidence:
+        d = apex_domain(ev.url or "")
+        if d and d not in sources:
+            sources.append(d)
     return OpportunityCard(
         id=opp.id, tier=opp.tier, thesis=opp.thesis,
         company=_company_ref(r, opp.company_entity_id),
@@ -137,7 +143,7 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
         person_name=person_name, qualifiers=_qualifiers(r, opp),
         contact=_contact(r, opp.company_entity_id),
         status=entry.get("status", "active"), status_note=entry.get("note"),
-        evidence_refs=_evidence_refs(r, opp.evidence_ids),
+        sources=sorted(sources), evidence_refs=evidence,
         updated_at=opp.updated_at,
     )
 
@@ -150,8 +156,8 @@ def health() -> dict:
 _EXPORT_COLUMNS = [
     "tier", "status", "score", "company", "domain", "thesis", "department",
     "decision_maker_role", "person", "service", "budget", "timeline", "engagement",
-    "remote", "stack", "contact_name", "contact_email", "contact_role", "evidence_url",
-    "evidence_count", "updated_at",
+    "remote", "stack", "contact_name", "contact_email", "contact_role", "sources",
+    "source_count", "evidence_url", "evidence_count", "updated_at",
 ]
 
 
@@ -171,6 +177,7 @@ def _export_row(c: OpportunityCard) -> dict:
         "stack": ", ".join(q.get("stack", []) or []),
         "contact_name": contact.get("name") or "", "contact_email": contact.get("email") or "",
         "contact_role": contact.get("role") or "",
+        "sources": "; ".join(c.sources), "source_count": len(c.sources),
         "evidence_url": ev[0].url if ev else "", "evidence_count": len(ev),
         "updated_at": c.updated_at.isoformat(),
     }

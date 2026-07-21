@@ -151,6 +151,40 @@ def test_import_rejects_empty_file():
                        files={"file": ("empty.csv", b"", "text/csv")}).status_code == 422
 
 
+def test_card_surfaces_cross_source_corroboration():
+    from extraction import EvidenceDraft, build_candidate
+
+    def _signal(stype, apex, url, **attrs):
+        return build_candidate(
+            kind="signal", signal_type=stype,
+            attributes={"company_domain": apex, "weak": False, **attrs},
+            evidence=EvidenceDraft(url=url, claim_type=f"signal.{stype}", confidence=0.7),
+            blocking_hints={"apex_domain": apex})
+
+    app.state.provider = InMemoryProvider()
+    with app.state.provider.bundle() as r:
+        # One company (merged by domain) with signals from two different sources:
+        # a funding note (techcrunch) and a hiring post (a job board).
+        r.pipeline.ingest([
+            build_candidate(kind="entity", entity_type="company",
+                            attributes={"name": "Globex", "display_name": "Globex",
+                                        "primary_domain": "globex.com"},
+                            evidence=EvidenceDraft(url="https://globex.com",
+                                                   claim_type="company.domain", confidence=0.8),
+                            blocking_hints={"apex_domain": "globex.com"}),
+            _signal("funding_raised", "globex.com", "https://techcrunch.example/globex",
+                    intent_axis="growth"),
+            _signal("hiring", "globex.com", "https://boards.greenhouse.io/globex/1",
+                    intent_axis="hiring", department="Sales"),
+        ], content_hash="x")
+
+    board = TestClient(app).get("/v1/opportunities?status=all").json()["data"]
+    opp = next(o for o in board if o["company"]["domain"] == "globex.com")
+    # The single merged lead is backed by both independent sources.
+    assert set(opp["sources"]) >= {"techcrunch.example", "greenhouse.io"}
+    assert len(opp["sources"]) >= 2
+
+
 def test_opportunity_status_queue_workflow(tmp_path):
     from apps.api.statusstore import StatusStore
 
