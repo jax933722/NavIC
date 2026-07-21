@@ -151,6 +151,36 @@ def test_import_rejects_empty_file():
                        files={"file": ("empty.csv", b"", "text/csv")}).status_code == 422
 
 
+def test_export_csv_and_xlsx():
+    import io
+
+    import openpyxl
+
+    app.state.provider = InMemoryProvider()
+    client = TestClient(app)
+    # one Gold-shaped lead with contact + qualifiers
+    client.post("/v1/admin/capture", json={
+        "text": "Can anyone recommend a website designer? Budget $2000, 30 days.",
+        "company_domain": "brightbrew.co", "company_name": "BrightBrew",
+        "author_name": "Priya Nair", "author_role": "Head of Marketing"})
+
+    csv = client.get("/v1/export?tier=all&format=csv")
+    assert csv.status_code == 200
+    assert csv.headers["content-type"].startswith("text/csv")
+    assert "attachment; filename=" in csv.headers["content-disposition"]
+    lines = csv.text.splitlines()
+    assert lines[0].lstrip("﻿").startswith("tier,score,company,domain")
+    row = next(ln for ln in lines[1:] if "brightbrew.co" in ln)
+    assert "$2000" in row and "Priya Nair" in row and "web_design" in row
+
+    xlsx = client.get("/v1/export?tier=gold&format=xlsx")
+    assert xlsx.status_code == 200
+    assert "spreadsheetml" in xlsx.headers["content-type"]
+    ws = openpyxl.load_workbook(io.BytesIO(xlsx.content)).active
+    assert ws.cell(1, 1).value == "Tier"
+    assert ws.max_row >= 2  # header + at least the Gold lead
+
+
 def test_seed_crud_and_jobboard_validation(tmp_path):
     from apps.api.seedstore import SeedStore
 

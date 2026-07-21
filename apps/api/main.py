@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 from core.errors import NavicError
 from extraction import EvidenceDraft, build_candidate
@@ -139,6 +140,77 @@ def _card(r: RepoBundle, opp) -> OpportunityCard:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+_EXPORT_COLUMNS = [
+    "tier", "score", "company", "domain", "thesis", "department", "decision_maker_role",
+    "person", "service", "budget", "timeline", "engagement", "remote", "stack",
+    "contact_name", "contact_email", "contact_role", "evidence_url", "evidence_count",
+    "updated_at",
+]
+
+
+def _export_row(c: OpportunityCard) -> dict:
+    q = c.qualifiers or {}
+    contact = c.contact or {}
+    ev = c.evidence_refs
+    return {
+        "tier": c.tier, "score": c.opportunity_score,
+        "company": c.company.name or "", "domain": c.company.domain or "",
+        "thesis": c.thesis or "", "department": c.department or "",
+        "decision_maker_role": c.decision_maker_role or "", "person": c.person_name or "",
+        "service": q.get("service", ""), "budget": q.get("budget", ""),
+        "timeline": q.get("timeline", ""),
+        "engagement": ", ".join(q.get("engagement", []) or []),
+        "remote": "yes" if q.get("remote") else "",
+        "stack": ", ".join(q.get("stack", []) or []),
+        "contact_name": contact.get("name") or "", "contact_email": contact.get("email") or "",
+        "contact_role": contact.get("role") or "",
+        "evidence_url": ev[0].url if ev else "", "evidence_count": len(ev),
+        "updated_at": c.updated_at.isoformat(),
+    }
+
+
+def _csv_bytes(rows: list[dict]) -> bytes:
+    import csv
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=_EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerows(rows)
+    return buf.getvalue().encode("utf-8-sig")  # BOM so Excel opens UTF-8 cleanly
+
+
+def _xlsx_bytes(rows: list[dict]) -> bytes:
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Opportunities"
+    ws.append([col.replace("_", " ").title() for col in _EXPORT_COLUMNS])
+    for r in rows:
+        ws.append([r[col] for col in _EXPORT_COLUMNS])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+@app.get("/v1/export")
+def export_board(
+    tier: str = Query("all", pattern="^(all|gold|silver|bronze)$"),
+    format: str = Query("csv", pattern="^(csv|xlsx)$"),
+) -> Response:
+    """Download the board (optionally one tier) as CSV or Excel for your CRM."""
+    with app.state.provider.bundle() as r:
+        rows = [_export_row(_card(r, x)) for x in r.opportunities.list(tier=tier)]
+    today = datetime.now(UTC).strftime("%Y%m%d")
+    filename = f"navic-opportunities-{tier}-{today}.{format}"
+    if format == "xlsx":
+        data = _xlsx_bytes(rows)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else:
+        data = _csv_bytes(rows)
+        media = "text/csv"
+    return Response(content=data, media_type=media,
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @app.get("/v1/opportunities", response_model=OpportunityList)

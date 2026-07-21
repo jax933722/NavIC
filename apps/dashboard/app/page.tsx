@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  API_URL,
   crawlerStart,
   crawlerStatus,
   crawlerStop,
@@ -110,7 +111,7 @@ export default function DashboardPage() {
 
       <CrawlerControl onData={load} />
 
-      <div className="tierbar">
+      <div className="tierbar" style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
         {TIERS.map((t) => (
           <button
             key={t}
@@ -120,6 +121,16 @@ export default function DashboardPage() {
             {t[0].toUpperCase() + t.slice(1)}
           </button>
         ))}
+        <span style={{ flex: 1 }} />
+        <span className="sub" style={{ margin: "0 6px 0 0" }}>
+          Export {tier === "all" ? "all" : tier}:
+        </span>
+        <a className="tierbtn" href={`${API_URL}/v1/export?tier=${tier}&format=csv`}>
+          CSV
+        </a>
+        <a className="tierbtn" href={`${API_URL}/v1/export?tier=${tier}&format=xlsx`}>
+          Excel
+        </a>
       </div>
 
       {state === "loading" && <div className="empty">Loading…</div>}
