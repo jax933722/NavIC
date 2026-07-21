@@ -139,6 +139,29 @@ def test_reddit_forhire_monitor_ingests_only_buyers():
                if c.entity_type == "company")
 
 
+def test_reddit_search_surfaces_requirement_posts():
+    # "People posted what they need" — kept only when it's an actual service request.
+    body = (FIX / "reddit_search/search.json").read_text()
+    result = _run("reddit_search", "https://www.reddit.com/search.json?q=x", body)
+
+    sols = [c for c in result.candidates if c.signal_type == "solicitation"]
+    axes = {c.attributes.get("intent_axis") for c in sols}
+    assert "web_development" in axes  # "looking for a web developer ... Shopify"
+    assert "security" in axes         # "recommend a WordPress malware removal expert"
+
+    companies = {c.attributes.get("name") for c in result.candidates
+                 if c.entity_type == "company"}
+    # A post that links a company anchors on its domain...
+    assert "gearloft.co" in companies
+    # ...an individual's request with no company link anchors on the poster.
+    assert "u/shop_owner" in companies
+    # An off-topic "looking for a good book" post is NOT a service request -> dropped.
+    assert not any("book" in (c.evidence.snippet or "").lower() for c in result.candidates)
+    # Budget lifted from the request text.
+    shop = next(c for c in sols if c.attributes["company_domain"] == "shop-owner")
+    assert shop.attributes.get("budget") == "$1500"
+
+
 def test_reddit_forhire_is_buyer_covers_employer_subs():
     from collectors.sources.reddit_forhire import _is_buyer
 

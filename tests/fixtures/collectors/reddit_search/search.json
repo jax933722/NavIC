@@ -1,0 +1,40 @@
+{
+  "kind": "Listing",
+  "data": {
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "title": "Looking for a web developer to build a Shopify store",
+          "selftext": "Budget $1500, need it in 3 weeks. DM me.",
+          "author": "shop_owner",
+          "url": "https://www.reddit.com/r/webdev/comments/a1/",
+          "permalink": "/r/webdev/comments/a1/looking_for_a_web_developer/",
+          "subreddit": "webdev"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "Can anyone recommend a WordPress malware removal expert?",
+          "selftext": "Our store got hacked. More at gearloft.co",
+          "author": "gearloft_admin",
+          "url_overridden_by_dest": "https://gearloft.co",
+          "permalink": "/r/Wordpress/comments/b2/can_anyone_recommend/",
+          "subreddit": "Wordpress"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "Looking for a good book on marketing",
+          "selftext": "any recommendations?",
+          "author": "reader1",
+          "url": "https://www.reddit.com/r/marketing/comments/c3/",
+          "permalink": "/r/marketing/comments/c3/looking_for_a_good_book/",
+          "subreddit": "marketing"
+        }
+      }
+    ]
+  }
+}
