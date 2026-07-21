@@ -16,7 +16,7 @@ from ingestion import RawResponse
 from parsing import ParsedDocument
 
 from ..base import BaseCollector, Capabilities, CollectorContext, FetchTask
-from ..jobboard import build_jobboard_candidates
+from ..jobboard import build_jobboard_candidates, company_for
 from ..registry import register
 
 
@@ -37,6 +37,7 @@ class WorkableCollector(BaseCollector):
 
     def __init__(self, seeds: list[str] | None = None):
         self._seeds = seeds or []
+        self._company_for: dict = {}  # {url: {name, website, careers_url}} for live crawls
 
     def plan(self, ctx: CollectorContext) -> Iterable[FetchTask]:
         for url in self._seeds:
@@ -48,7 +49,8 @@ class WorkableCollector(BaseCollector):
         except (json.JSONDecodeError, ValueError):
             data = {}
         jobs = data.get("jobs", []) if isinstance(data, dict) else []
-        company = data.get("company", {}) if isinstance(data, dict) else {}
+        payload_company = data.get("company") if isinstance(data, dict) else None
+        company = company_for(self, raw.url, payload_company)
         return ParsedDocument(url=raw.url, structured={"company": company, "jobs": jobs})
 
     def normalize(self, doc: ParsedDocument, ctx: CollectorContext) -> list[CandidateRecord]:

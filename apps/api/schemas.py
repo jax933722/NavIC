@@ -130,3 +130,14 @@ class ImportResponse(BaseModel):
     signals: int
     opportunities: int
     row_errors: list[str] = []  # human-readable "row N: <reason>" for skipped rows
+
+
+class SeedTargetIn(BaseModel):
+    source: str
+    url: str
+    company_domain: str | None = None
+    company_name: str | None = None
+
+
+class SeedTarget(SeedTargetIn):
+    id: int

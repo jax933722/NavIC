@@ -137,3 +137,35 @@ export async function crawlerStop(): Promise<CrawlerStatus> {
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
+
+export interface SeedTarget {
+  id: number;
+  source: string;
+  url: string;
+  company_domain?: string | null;
+  company_name?: string | null;
+}
+
+export async function listSeeds(): Promise<{ data: SeedTarget[]; sources: string[] }> {
+  const res = await fetch(`${API_URL}/v1/admin/seeds`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+export async function addSeed(t: Omit<SeedTarget, "id">): Promise<SeedTarget> {
+  const res = await fetch(`${API_URL}/v1/admin/seeds`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(t),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `API ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteSeed(id: number): Promise<void> {
+  const res = await fetch(`${API_URL}/v1/admin/seeds/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+}

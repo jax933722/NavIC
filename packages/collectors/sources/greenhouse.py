@@ -20,7 +20,7 @@ from ingestion import RawResponse
 from parsing import ParsedDocument
 
 from ..base import BaseCollector, Capabilities, CollectorContext, FetchTask
-from ..jobboard import build_jobboard_candidates
+from ..jobboard import build_jobboard_candidates, company_for
 from ..registry import register
 
 
@@ -34,6 +34,7 @@ class GreenhouseCollector(BaseCollector):
 
     def __init__(self, seeds: list[str] | None = None):
         self._seeds = seeds or []
+        self._company_for: dict = {}  # {url: {name, website, careers_url}} for live crawls
 
     def plan(self, ctx: CollectorContext) -> Iterable[FetchTask]:
         for url in self._seeds:
@@ -56,4 +57,4 @@ class GreenhouseCollector(BaseCollector):
                 job.get("location"), dict) else job.get("location")
             jobs.append({"title": job.get("title", ""), "department": explicit,
                          "location": location, "url": job.get("absolute_url") or job.get("url")})
-        return build_jobboard_candidates(board.get("company", {}), jobs)
+        return build_jobboard_candidates(company_for(self, doc.url, board.get("company")), jobs)

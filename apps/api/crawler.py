@@ -20,44 +20,68 @@ from ingestion import HttpFetchClient, InMemoryRawStore
 log = get_logger("api.crawler")
 
 
-def _default_sources() -> list[tuple[str, list[str]]]:
+# A source is (collector slug, seed URLs, {url: company dict}) — the company map is
+# populated for job boards, whose live API responses don't carry the company domain.
+Source = tuple[str, list[str], dict]
+
+
+def _default_sources() -> list[Source]:
     """Registered collectors that ship with default seeds (ready to run with no
     per-company config) — today the community monitors (HN freelancer, r/forhire)."""
     import collectors.sources  # noqa: F401
     from collectors import REGISTRY
     from collectors.registry import get_collector
 
-    out: list[tuple[str, list[str]]] = []
+    out: list[Source] = []
     for slug in sorted(REGISTRY):
         seeds = list(getattr(get_collector(slug), "_seeds", []) or [])
         if seeds:
-            out.append((slug, seeds))
+            out.append((slug, seeds, {}))
     return out
 
 
+def _sources_from_targets(targets) -> list[Source]:
+    """Group operator seed targets by collector into runnable sources; attach the
+    company each job-board URL should anchor to."""
+    by_slug: dict[str, dict] = {}
+    for t in targets:
+        entry = by_slug.setdefault(t.source, {"seeds": [], "company_for": {}})
+        entry["seeds"].append(t.url)
+        if t.company_domain:
+            entry["company_for"][t.url] = {
+                "name": t.company_name or t.company_domain,
+                "website": t.company_domain, "careers_url": t.url}
+    return [(slug, e["seeds"], e["company_for"]) for slug, e in by_slug.items()]
+
+
 class CrawlerManager:
-    def __init__(self, provider_getter, fetch_factory=HttpFetchClient):
+    def __init__(self, provider_getter, fetch_factory=HttpFetchClient, seeds_provider=None):
         self._provider_getter = provider_getter
         self._fetch_factory = fetch_factory
+        self._seeds_provider = seeds_provider  # () -> list[Target]; falls back to defaults
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._lock = threading.Lock()
         self._interval = 45
-        self._sources: list[tuple[str, list[str]]] = []
+        self._sources: list[Source] = []
         self._state: dict = {
             "running": False, "started_at": None, "cycles": 0, "last_run_at": None,
             "totals": {"companies": 0, "signals": 0, "opportunities": 0},
             "per_source": {}, "last_error": None,
         }
 
+    def _resolve_sources(self) -> list[Source]:
+        targets = list(self._seeds_provider()) if self._seeds_provider else []
+        return _sources_from_targets(targets) if targets else _default_sources()
+
     # ---- control ---------------------------------------------------------
     def start(self, interval: int | None = None,
-              sources: list[tuple[str, list[str]]] | None = None) -> dict:
+              sources: list[Source] | None = None) -> dict:
         with self._lock:
             if self._state["running"]:
                 return self.status()
             self._interval = max(10, int(interval or self._interval))
-            self._sources = sources or _default_sources()
+            self._sources = sources or self._resolve_sources()
             self._stop.clear()
             self._state.update(running=True, started_at=datetime.now(UTC).isoformat(),
                                cycles=0, last_error=None)
@@ -78,7 +102,7 @@ class CrawlerManager:
         with self._lock:
             s = dict(self._state)
             s["interval"] = self._interval
-            s["sources"] = [slug for slug, _ in self._sources]
+            s["sources"] = [slug for slug, _, _ in self._sources]
             return s
 
     # ---- run loop --------------------------------------------------------
@@ -96,12 +120,14 @@ class CrawlerManager:
 
         per_source: dict = {}
         cycle_tot = {"companies": 0, "signals": 0, "opportunities": 0}
-        for slug, seeds in self._sources:
+        for slug, seeds, company_for in self._sources:
             if self._stop.is_set():
                 break
             try:
                 collector = get_collector(slug)
                 collector._seeds = seeds
+                if company_for:
+                    collector._company_for = company_for
                 fetch = self._fetch_factory()
                 ctx = make_context(collector.source_slug, fetch, InMemoryRawStore(),
                                    trace_id="crawl")

@@ -151,6 +151,89 @@ def test_import_rejects_empty_file():
                        files={"file": ("empty.csv", b"", "text/csv")}).status_code == 422
 
 
+def test_seed_crud_and_jobboard_validation(tmp_path):
+    from apps.api.seedstore import SeedStore
+
+    app.state.provider = InMemoryProvider()
+    app.state.seeds = SeedStore(str(tmp_path / "seeds.json"))
+    client = TestClient(app)
+
+    # starts empty, and lists the available collector slugs to choose from
+    listing = client.get("/v1/admin/seeds").json()
+    assert listing["data"] == [] and "greenhouse" in listing["sources"]
+
+    # a job board without a company website is rejected
+    bad = client.post("/v1/admin/seeds", json={
+        "source": "greenhouse",
+        "url": "https://boards-api.greenhouse.io/v1/boards/acme/jobs"})
+    assert bad.status_code == 422 and "company_domain" in bad.json()["detail"]
+
+    # with the website it is accepted and persisted
+    ok = client.post("/v1/admin/seeds", json={
+        "source": "greenhouse",
+        "url": "https://boards-api.greenhouse.io/v1/boards/acme/jobs",
+        "company_domain": "acme.com", "company_name": "Acme"})
+    assert ok.status_code == 200
+    tid = ok.json()["id"]
+
+    # an unknown source is rejected; a feed without a company is fine
+    assert client.post("/v1/admin/seeds",
+                       json={"source": "nope", "url": "x"}).status_code == 422
+    assert client.post("/v1/admin/seeds",
+                       json={"source": "rss_blog", "url": "https://x/feed.xml"}).status_code == 200
+
+    assert len(client.get("/v1/admin/seeds").json()["data"]) == 2
+
+    # persistence: a fresh store over the same file sees the saved targets
+    assert len(SeedStore(str(tmp_path / "seeds.json")).list()) == 2
+
+    # delete
+    assert client.delete(f"/v1/admin/seeds/{tid}").status_code == 200
+    assert client.delete("/v1/admin/seeds/99999").status_code == 404
+    assert len(client.get("/v1/admin/seeds").json()["data"]) == 1
+
+
+def test_crawler_uses_configured_jobboard_target(tmp_path, monkeypatch):
+    """A configured Greenhouse target with a live-shaped payload (no company block)
+    is anchored via the operator-supplied company website."""
+    import json
+    import time
+
+    from apps.api import crawler as crawler_mod
+    from apps.api.seedstore import SeedStore
+
+    from ingestion import StubFetchClient
+
+    url = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+    body = json.dumps({"jobs": [
+        {"title": "Senior Account Executive", "absolute_url": url + "/1",
+         "departments": [{"name": "Sales"}]},
+        {"title": "Staff Engineer", "absolute_url": url + "/2",
+         "departments": [{"name": "Engineering"}]}]})
+
+    app.state.provider = InMemoryProvider()
+    app.state.seeds = SeedStore(str(tmp_path / "seeds.json"))
+    app.state.seeds.add("greenhouse", url, company_domain="acme.com", company_name="Acme")
+    app.state.crawler = crawler_mod.CrawlerManager(
+        provider_getter=lambda: app.state.provider,
+        fetch_factory=lambda: StubFetchClient({url: (200, "application/json", body)}),
+        seeds_provider=lambda: app.state.seeds.list())
+    client = TestClient(app)
+
+    client.post("/v1/admin/crawler/start", params={"interval_seconds": 10})
+    status = {}
+    for _ in range(30):
+        status = client.get("/v1/admin/crawler/status").json()
+        if status["cycles"] >= 1:
+            break
+        time.sleep(0.1)
+    client.post("/v1/admin/crawler/stop")
+
+    assert status["per_source"]["greenhouse"]["ok"] is True
+    board = client.get("/v1/opportunities").json()["data"]
+    assert any(o["company"]["domain"] == "acme.com" for o in board)
+
+
 def test_crawler_start_runs_a_cycle_then_stops(monkeypatch):
     import time
     from pathlib import Path
@@ -163,7 +246,7 @@ def test_crawler_start_runs_a_cycle_then_stops(monkeypatch):
     body = (Path(__file__).parent.parent
             / "fixtures/collectors/hn_freelance/search.json").read_text()
     # Offline: default sources -> one stubbed HN feed; fetch client -> the stub.
-    monkeypatch.setattr(crawler_mod, "_default_sources", lambda: [("hn_freelance", [url])])
+    monkeypatch.setattr(crawler_mod, "_default_sources", lambda: [("hn_freelance", [url], {})])
     app.state.provider = InMemoryProvider()
     app.state.crawler = crawler_mod.CrawlerManager(
         provider_getter=lambda: app.state.provider,

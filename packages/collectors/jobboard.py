@@ -20,6 +20,13 @@ from normalization import apex_domain
 from signals.taxonomy import DEPARTMENT_BY_ROLE
 
 
+def company_for(collector, url: str, payload_company: dict | None) -> dict:
+    """The company to anchor a board to: the one in the payload if present (fixtures),
+    else the operator-configured `{url: {...}}` injected on the collector (live crawls,
+    where the provider API returns no company domain)."""
+    return payload_company or getattr(collector, "_company_for", {}).get(url, {})
+
+
 def department_for(title: str, explicit: str | None) -> str | None:
     """The role's stated department, else one inferred from its title."""
     if explicit:

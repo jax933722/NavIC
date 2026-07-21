@@ -41,18 +41,26 @@ from .schemas import (
     SearchResultOut,
     SeedRequest,
     SeedResponse,
+    SeedTarget,
+    SeedTargetIn,
     TimelineEventOut,
     TransitionOut,
 )
+from .seedstore import SeedStore
 
 app = FastAPI(title="NavIC API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 app.state.provider = get_provider()
-# Operator-controlled crawler (Start/Stop from the dashboard); ingests into the
-# current provider so new leads land on the board live.
-app.state.crawler = CrawlerManager(provider_getter=lambda: app.state.provider)
+# Operator seed list (persisted) + on-demand crawler (Start/Stop from the dashboard).
+# The crawler pulls from the configured targets, falling back to the built-in
+# community monitors when none are set; ingests into the current provider so new
+# leads land on the board live.
+app.state.seeds = SeedStore()
+app.state.crawler = CrawlerManager(
+    provider_getter=lambda: app.state.provider,
+    seeds_provider=lambda: app.state.seeds.list())
 
 
 def _evidence_refs(r: RepoBundle, ids: list[int]) -> list[EvidenceRef]:
@@ -485,3 +493,38 @@ def crawler_stop() -> dict:
 @app.get("/v1/admin/crawler/status")
 def crawler_status() -> dict:
     return app.state.crawler.status()
+
+
+@app.get("/v1/admin/seeds")
+def list_seeds() -> dict:
+    """The operator's crawl targets + the collector slugs available to add."""
+    import collectors.sources  # noqa: F401
+    from collectors import REGISTRY
+
+    return {"data": [SeedTarget(**t.__dict__) for t in app.state.seeds.list()],
+            "sources": sorted(REGISTRY)}
+
+
+@app.post("/v1/admin/seeds", response_model=SeedTarget)
+def add_seed(req: SeedTargetIn) -> SeedTarget:
+    import collectors.sources  # noqa: F401
+    from collectors import REGISTRY
+
+    if req.source not in REGISTRY:
+        raise HTTPException(status_code=422, detail=f"unknown source '{req.source}'")
+    if not (req.url or "").strip():
+        raise HTTPException(status_code=422, detail="a url is required")
+    # Job boards need the company website to anchor the leads they produce.
+    if req.source in {"greenhouse", "lever", "ashby", "workable"} and not req.company_domain:
+        raise HTTPException(
+            status_code=422,
+            detail=f"'{req.source}' needs a company_domain (the company's website) to anchor leads")
+    t = app.state.seeds.add(req.source, req.url, req.company_domain, req.company_name)
+    return SeedTarget(**t.__dict__)
+
+
+@app.delete("/v1/admin/seeds/{target_id}")
+def delete_seed(target_id: int) -> dict:
+    if not app.state.seeds.remove(target_id):
+        raise HTTPException(status_code=404, detail="target not found")
+    return {"id": target_id, "status": "deleted"}
