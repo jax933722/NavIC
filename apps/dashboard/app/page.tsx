@@ -71,7 +71,7 @@ function CrawlerControl({ onData }: { onData: () => void }) {
         {running ? (
           <>
             <b style={{ color: "#3fb950" }}>● Live</b> — {status?.cycles} cycle
-            {status?.cycles === 1 ? "" : "s"} · {status?.totals.opportunities ?? 0} leads found ·
+            {status?.cycles === 1 ? "" : "s"} · {status?.board_total ?? 0} leads on the board ·
             watching {status?.sources.join(", ") || "—"} · every {status?.interval}s
           </>
         ) : (

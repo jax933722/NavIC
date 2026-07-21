@@ -56,9 +56,10 @@ export async function fetchOpportunities(
   tier: TierFilter,
   status: StatusFilter = "active",
 ): Promise<OpportunityList> {
-  const res = await fetch(`${API_URL}/v1/opportunities?tier=${tier}&status=${status}`, {
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${API_URL}/v1/opportunities?tier=${tier}&status=${status}&limit=200`,
+    { cache: "no-store" },
+  );
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
@@ -131,6 +132,7 @@ export interface CrawlerStatus {
   interval: number;
   sources: string[];
   totals: { companies: number; signals: number; opportunities: number };
+  board_total: number | null;
   per_source: Record<string, { ok: boolean; error?: string; opportunities?: number }>;
   last_error: string | null;
 }

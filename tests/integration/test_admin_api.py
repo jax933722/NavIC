@@ -373,7 +373,10 @@ def test_crawler_start_runs_a_cycle_then_stops(monkeypatch):
     assert status["per_source"]["hn_freelance"]["ok"] is True
 
     # New leads are live on the board while it runs.
-    board = client.get("/v1/opportunities").json()["data"]
+    board = client.get("/v1/opportunities?status=all&limit=200").json()["data"]
     assert any(o["company"]["domain"] == "northwindlabs.io" for o in board)
+    # The headline "leads on the board" count is the distinct total, not a cumulative
+    # re-count — it matches the actual board size regardless of how many cycles ran.
+    assert status["board_total"] == len(board)
 
     assert client.post("/v1/admin/crawler/stop").json()["running"] is False

@@ -100,9 +100,19 @@ class CrawlerManager:
 
     def status(self) -> dict:
         with self._lock:
+            # The true number of DISTINCT leads currently on the board (matches the
+            # export). `totals` below is cumulative crawl activity across cycles and
+            # will be larger because idempotent re-scans re-evaluate the same leads.
+            board_total = None
+            try:
+                with self._provider_getter().bundle() as r:
+                    board_total = len(r.opportunities.list())
+            except Exception:  # noqa: BLE001  (status must never fail)
+                board_total = None
             s = dict(self._state)
             s["interval"] = self._interval
             s["sources"] = [slug for slug, _, _ in self._sources]
+            s["board_total"] = board_total
             return s
 
     # ---- run loop --------------------------------------------------------
