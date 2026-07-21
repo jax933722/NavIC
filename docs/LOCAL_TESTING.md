@@ -47,6 +47,11 @@ git checkout claude/opportunity-intelligence-platform-mh9jb3
 
 ## 1. Quick demo (one command)
 
+**Windows — the easy way:** once Docker Desktop is running, just **double-click
+`start-navic.bat`** in the project folder. It builds everything, waits until it's
+ready, and opens the dashboard for you. To stop, double-click **`stop-navic.bat`**.
+(Everything below is the manual equivalent for any OS.)
+
 From the project folder (`navic`), run:
 
 ```bash
