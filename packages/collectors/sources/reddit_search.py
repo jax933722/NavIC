@@ -40,6 +40,9 @@ _QUERIES = (
     '"looking for a developer"', '"looking for a designer"',
     '"looking for a freelancer"', '"can anyone recommend a"',
     '"in the market for"', '"need a freelancer"', '"looking to hire a"',
+    '"looking for an agency"', '"need someone to build"', '"who can build me"',
+    '"recommendations for a"', '"looking for someone to"', '"need help with my website"',
+    '"looking for a marketing"', '"need a logo"', '"looking for a copywriter"',
 )
 
 

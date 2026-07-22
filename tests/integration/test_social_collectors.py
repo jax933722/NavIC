@@ -205,6 +205,50 @@ def test_default_feeds_are_broadened():
     assert len(wwr) >= 5 and any("categories/remote-programming" in u for u in wwr)
 
 
+def test_bluesky_surfaces_requirement_posts_no_key():
+    # Bluesky's key-less public search — "people posting requirements".
+    body = (FIX / "bluesky/search.json").read_text()
+    result = _run("bluesky", "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=x",
+                  body)
+
+    sols = [c for c in result.candidates if c.signal_type == "solicitation"]
+    axes = {c.attributes.get("intent_axis") for c in sols}
+    assert "web_development" in axes and "seo" in axes  # Shopify store, SEO agency
+
+    companies = {c.attributes.get("name") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert "acme-hq.com" in companies              # domain named in the post
+    assert "bsky/maker_b.bsky.social" in companies  # individual with no company link
+    # Off-topic "sci-fi book" is not a service request -> dropped.
+    assert not any("book" in (c.evidence.snippet or "").lower() for c in result.candidates)
+    acme = next(c for c in sols if c.attributes["company_domain"] == "acme-hq.com")
+    assert acme.attributes.get("budget") == "$2000"
+
+
+def test_remotive_yields_hiring_companies_no_key():
+    # Remotive's free public jobs API — remote hiring firehose.
+    body = (FIX / "remotive/jobs.json").read_text()
+    result = _run("remotive", "https://remotive.com/api/remote-jobs", body)
+
+    companies = {c.attributes.get("primary_domain") for c in result.candidates
+                 if c.entity_type == "company"}
+    # A job whose description/company_url names a domain anchors on it...
+    assert "northwindlabs.io" in companies
+    # ...one that names only a company name anchors on the name (marked name-only).
+    assert "brightbrew-coffee" in companies
+    brightbrew = next(c for c in result.candidates if c.entity_type == "company"
+                      and c.attributes["primary_domain"] == "brightbrew-coffee")
+    assert brightbrew.attributes["anchor_kind"] == "name"
+
+    hiring = [c for c in result.candidates if c.signal_type == "hiring"]
+    assert {"northwindlabs.io", "brightbrew-coffee"} <= {
+        c.attributes["company_domain"] for c in hiring}
+
+
+def test_open_source_crawler_collectors_registered():
+    assert {"bluesky", "remotive"} <= set(REGISTRY)
+
+
 def test_linkedin_post_solicitation_becomes_signal():
     # An employee's public "who can I hire?" post is an explicit buying signal
     # attributed to their company (author = in-market buyer).

@@ -27,7 +27,10 @@ by how hard they are to turn on.
 | **hn_freelance** | none | free | 🟢 ready | Auto-monitors HN "Seeking Freelancer" buyer posts via the free Algolia API |
 | **greenhouse** | none | free | 🟢 ready | Public job-board API |
 | **lever / ashby / workable** | none | free | 🟢 ready | Public job-board APIs (same pattern as Greenhouse) |
-| **remoteok / weworkremotely** | none | free | 🟢 ready | Broad remote-hiring feeds (public API / RSS); anchors on the company domain from the apply link |
+| **remoteok / weworkremotely / remotive** | none | free | 🟢 ready | Broad remote-hiring feeds (public APIs / RSS); anchor on the company domain from the apply link, else on the company name |
+| **hn_search** | none | free | 🟢 ready | Key-less requirement firehose — searches all of Hacker News for "looking for a…" posts via the free Algolia API |
+| **reddit_search / reddit_forhire** | none (dev) | free | 🟢 ready | Public Reddit search + hiring subreddits for buyers posting requirements (production wants a free Reddit app) |
+| **bluesky** | none | free | 🟢 ready | Key-less public search (public.api.bsky.app) for "looking for a…" posts across Bluesky |
 | **github** | API key (PAT) | free | 🟢 easy | 5,000 req/hr authenticated |
 | **producthunt** | OAuth token | free | 🟢 easy | Official API v2 (GraphQL) |
 | **reddit** | OAuth app | free tier | 🟡 medium | API terms tightened; commercial use may need an agreement |

@@ -1,0 +1,26 @@
+{
+  "0-legal-notice": "Remotive API usage terms placeholder (ignored by the collector).",
+  "job-count": 2,
+  "jobs": [
+    {
+      "id": 1001,
+      "title": "Senior Backend Engineer",
+      "company_name": "Northwind Labs",
+      "category": "Software Development",
+      "candidate_required_location": "Worldwide",
+      "url": "https://remotive.com/remote-jobs/software-dev/senior-backend-1001",
+      "company_url": "https://northwindlabs.io",
+      "description": "We are hiring a backend engineer. Apply at northwindlabs.io."
+    },
+    {
+      "id": 1002,
+      "title": "Brand Designer",
+      "company_name": "BrightBrew Coffee",
+      "category": "Design",
+      "candidate_required_location": "Europe",
+      "url": "https://remotive.com/remote-jobs/design/brand-designer-1002",
+      "company_url": "",
+      "description": "Remote brand designer role at a growing coffee startup."
+    }
+  ]
+}

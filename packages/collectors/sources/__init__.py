@@ -2,6 +2,7 @@
 
 from . import (  # noqa: F401  (self-register via @register)
     ashby,
+    bluesky,
     company_web,
     funding,
     github,
@@ -17,6 +18,7 @@ from . import (  # noqa: F401  (self-register via @register)
     reddit_forhire,
     reddit_search,
     remoteok,
+    remotive,
     rss_blog,
     weworkremotely,
     workable,
@@ -41,5 +43,7 @@ __all__ = [
     "ashby",
     "workable",
     "remoteok",
+    "remotive",
     "weworkremotely",
+    "bluesky",
 ]

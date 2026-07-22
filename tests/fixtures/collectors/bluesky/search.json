@@ -1,0 +1,25 @@
+{
+  "posts": [
+    {
+      "uri": "at://did:plc:aaa/app.bsky.feed.post/3kfounder1",
+      "author": { "handle": "acmefounder.bsky.social", "displayName": "Acme Founder" },
+      "record": {
+        "text": "We're looking for a web developer to build our Shopify store. Budget ~$2000, need it in 30 days. More at acme-hq.com"
+      }
+    },
+    {
+      "uri": "at://did:plc:bbb/app.bsky.feed.post/3kmaker2",
+      "author": { "handle": "maker_b.bsky.social", "displayName": "Maker B" },
+      "record": {
+        "text": "Can anyone recommend a good SEO agency? We just launched and need organic traffic."
+      }
+    },
+    {
+      "uri": "at://did:plc:ccc/app.bsky.feed.post/3kreader3",
+      "author": { "handle": "reader_c.bsky.social", "displayName": "Reader C" },
+      "record": {
+        "text": "Looking for a good sci-fi book recommendation for the weekend."
+      }
+    }
+  ]
+}

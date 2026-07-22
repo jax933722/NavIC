@@ -37,7 +37,8 @@ _SKIP_AUTHORS = {"", "[deleted]"}
 _QUERIES = (
     "looking for a developer", "looking for a designer", "looking for a freelancer",
     "can anyone recommend a", "in the market for", "looking to hire a",
-    "need a freelancer", "recommendations for a",
+    "need a freelancer", "recommendations for a", "looking for an agency",
+    "need someone to build", "who can build me a", "looking for a consultant",
 )
 
 
