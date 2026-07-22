@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "slug": "backend-engineer-initech-berlin",
+      "company_name": "Initech",
+      "title": "Backend Engineer",
+      "description": "We are hiring a backend engineer. More at initech.com.",
+      "remote": true,
+      "url": "https://www.arbeitnow.com/view/backend-engineer-initech-berlin",
+      "tags": [ "Engineering" ],
+      "job_types": [ "full_time" ],
+      "location": "Berlin"
+    },
+    {
+      "slug": "product-designer-hooli",
+      "company_name": "Hooli",
+      "title": "Product Designer",
+      "description": "Remote product designer role at a fast-growing company.",
+      "remote": true,
+      "url": "https://www.arbeitnow.com/view/product-designer-hooli",
+      "tags": [ "Design" ],
+      "job_types": [ "full_time" ],
+      "location": "Munich"
+    }
+  ],
+  "links": { "first": "https://www.arbeitnow.com/api/job-board-api?page=1" }
+}

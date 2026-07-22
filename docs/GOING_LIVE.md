@@ -31,11 +31,14 @@ by how hard they are to turn on.
 | **hn_search** | none | free | 🟢 ready | Key-less requirement firehose — searches all of Hacker News for "looking for a…" posts via the free Algolia API |
 | **reddit_search / reddit_forhire** | none (dev) | free | 🟢 ready | Public Reddit search + hiring subreddits for buyers posting requirements (production wants a free Reddit app) |
 | **bluesky** | none | free | 🟢 ready | Key-less public search (public.api.bsky.app) for "looking for a…" posts across Bluesky |
+| **freelancer** | none (dev) | free | 🟢 ready | Freelancer.com marketplace — buyers posting paid projects with budgets (official public projects API) |
+| **themuse / jobicy / arbeitnow** | none | free | 🟢 ready | Key-less official job-board APIs; broad hiring firehose, domain- or name-anchored |
 | **github** | API key (PAT) | free | 🟢 easy | 5,000 req/hr authenticated |
 | **producthunt** | OAuth token | free | 🟢 easy | Official API v2 (GraphQL) |
 | **reddit** | OAuth app | free tier | 🟡 medium | API terms tightened; commercial use may need an agreement |
 | **news** | API key | free–paid | 🟡 medium | GDELT free to start; NewsAPI/Bing paid for commercial |
 | **funding** | API key | free–$$$ | 🟡 medium | SEC EDGAR free; Crunchbase paid |
+| **upwork / fiverr / toptal / peopleperhour / guru** | — | — | 🔴 excluded | **No open API + terms forbid crawling** — intentionally not added; would break the compliance line |
 | **linkedin** | partner/OAuth | — | 🔴 constrained | **No official API for public member posts** — see below |
 
 🟢 = works with little/no setup · 🟡 = needs an account + light integration · 🔴 = legally constrained, needs a different approach

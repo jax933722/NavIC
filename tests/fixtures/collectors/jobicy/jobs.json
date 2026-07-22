@@ -1,0 +1,24 @@
+{
+  "apiVersion": "2.0",
+  "jobCount": 2,
+  "jobs": [
+    {
+      "id": 55001,
+      "jobTitle": "React Developer",
+      "companyName": "Globex",
+      "jobGeo": "USA",
+      "jobIndustry": [ "Development" ],
+      "url": "https://jobicy.com/jobs/55001-react-developer",
+      "jobDescription": "Join Globex to build our dashboard. Apply via globex.com."
+    },
+    {
+      "id": 55002,
+      "jobTitle": "Content Marketing Manager",
+      "companyName": "BrightBrew Coffee",
+      "jobGeo": "Anywhere",
+      "jobIndustry": [ "Marketing" ],
+      "url": "https://jobicy.com/jobs/55002-content-marketing-manager",
+      "jobDescription": "Remote content marketing role at a growing coffee startup."
+    }
+  ]
+}

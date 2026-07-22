@@ -1,0 +1,22 @@
+{
+  "page": 0,
+  "page_count": 1,
+  "results": [
+    {
+      "name": "Senior Frontend Engineer",
+      "company": { "name": "Umbrella Analytics", "short_name": "umbrella" },
+      "categories": [ { "name": "Software Engineering" } ],
+      "locations": [ { "name": "Remote" } ],
+      "refs": { "landing_page": "https://www.themuse.com/jobs/umbrella/senior-frontend-engineer" },
+      "contents": "We are hiring a frontend engineer. Learn more at umbrella-analytics.com."
+    },
+    {
+      "name": "Brand Designer",
+      "company": { "name": "Nakatomi Studio", "short_name": "nakatomi" },
+      "categories": [ { "name": "Design" } ],
+      "locations": [ { "name": "New York" } ],
+      "refs": { "landing_page": "https://www.themuse.com/jobs/nakatomi/brand-designer" },
+      "contents": "Remote-friendly brand designer role at a growing studio."
+    }
+  ]
+}

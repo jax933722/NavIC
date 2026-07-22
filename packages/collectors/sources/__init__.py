@@ -1,15 +1,18 @@
 """Source collectors. Importing this package registers the built-in collectors."""
 
 from . import (  # noqa: F401  (self-register via @register)
+    arbeitnow,
     ashby,
     bluesky,
     company_web,
+    freelancer,
     funding,
     github,
     greenhouse,
     hackernews,
     hn_freelance,
     hn_search,
+    jobicy,
     lever,
     linkedin,
     news,
@@ -20,6 +23,7 @@ from . import (  # noqa: F401  (self-register via @register)
     remoteok,
     remotive,
     rss_blog,
+    themuse,
     weworkremotely,
     workable,
 )
@@ -46,4 +50,8 @@ __all__ = [
     "remotive",
     "weworkremotely",
     "bluesky",
+    "freelancer",
+    "themuse",
+    "jobicy",
+    "arbeitnow",
 ]

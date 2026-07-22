@@ -245,8 +245,72 @@ def test_remotive_yields_hiring_companies_no_key():
         c.attributes["company_domain"] for c in hiring}
 
 
+def test_freelancer_marketplace_yields_buyer_projects_no_key():
+    # Freelancer.com marketplace: buyers posting paid projects -> solicitation leads.
+    body = (FIX / "freelancer/projects.json").read_text()
+    result = _run("freelancer", "https://www.freelancer.com/api/projects/0.1/projects/active/",
+                  body)
+
+    sols = [c for c in result.candidates if c.signal_type == "solicitation"]
+    axes = {c.attributes.get("intent_axis") for c in sols}
+    assert "web_development" in axes and "seo" in axes  # Shopify build, SEO agency
+
+    companies = {c.attributes.get("name") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert "freelancer/38000001" in companies  # anonymous poster -> anchored on project
+    # The structured budget is lifted into the signal.
+    shopify = next(c for c in sols if c.attributes["company_domain"] == "freelancer-38000001")
+    assert shopify.attributes.get("budget") == "$1500"
+    # A plain data-entry gig (no service category) is not kept as a service request.
+    assert not any("data entry" in (c.evidence.snippet or "").lower()
+                   for c in result.candidates)
+
+
+def test_themuse_yields_hiring_companies_no_key():
+    body = (FIX / "themuse/jobs.json").read_text()
+    result = _run("themuse", "https://www.themuse.com/api/public/jobs", body)
+
+    companies = {c.attributes.get("primary_domain") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert "umbrella-analytics.com" in companies  # domain named in the posting
+    assert "nakatomi-studio" in companies         # name-only when no domain
+    nak = next(c for c in result.candidates if c.entity_type == "company"
+               and c.attributes["primary_domain"] == "nakatomi-studio")
+    assert nak.attributes["anchor_kind"] == "name"
+    hiring = {c.attributes["company_domain"] for c in result.candidates
+              if c.signal_type == "hiring"}
+    assert {"umbrella-analytics.com", "nakatomi-studio"} <= hiring
+
+
+def test_jobicy_yields_hiring_companies_no_key():
+    body = (FIX / "jobicy/jobs.json").read_text()
+    result = _run("jobicy", "https://jobicy.com/api/v2/remote-jobs", body)
+
+    companies = {c.attributes.get("primary_domain") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert "globex.com" in companies          # domain named in the description
+    assert "brightbrew-coffee" in companies   # name-only when no domain
+    hiring = {c.attributes["company_domain"] for c in result.candidates
+              if c.signal_type == "hiring"}
+    assert {"globex.com", "brightbrew-coffee"} <= hiring
+
+
+def test_arbeitnow_yields_hiring_companies_no_key():
+    body = (FIX / "arbeitnow/jobs.json").read_text()
+    result = _run("arbeitnow", "https://www.arbeitnow.com/api/job-board-api", body)
+
+    companies = {c.attributes.get("primary_domain") for c in result.candidates
+                 if c.entity_type == "company"}
+    assert "initech.com" in companies  # domain named in the description
+    assert "hooli" in companies        # name-only when no domain
+    hiring = {c.attributes["company_domain"] for c in result.candidates
+              if c.signal_type == "hiring"}
+    assert {"initech.com", "hooli"} <= hiring
+
+
 def test_open_source_crawler_collectors_registered():
-    assert {"bluesky", "remotive"} <= set(REGISTRY)
+    assert {"bluesky", "remotive", "freelancer", "themuse", "jobicy", "arbeitnow"} \
+        <= set(REGISTRY)
 
 
 def test_linkedin_post_solicitation_becomes_signal():
