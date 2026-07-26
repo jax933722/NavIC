@@ -11,6 +11,8 @@ middleware + a tenant filter later (blueprint §27) — no endpoint changes.
 from __future__ import annotations
 
 import io
+import os
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime, timedelta
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
@@ -51,7 +53,32 @@ from .seedstore import SeedStore
 from .statusstore import VALID as VALID_STATUSES
 from .statusstore import StatusStore
 
-app = FastAPI(title="NavIC API", version="0.1.0")
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in {"1", "true", "yes", "on"}
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """24/7 mode: when NAVIC_CRAWLER_AUTOSTART is set, the crawler begins on API
+    startup (no dashboard click) and runs continuously until the process stops.
+    Off by default so tests and one-off runs stay quiet; the Docker demo turns it on.
+    """
+    if _env_flag("NAVIC_CRAWLER_AUTOSTART"):
+        interval = int(os.getenv("NAVIC_CRAWLER_INTERVAL", "180") or "180")
+        app.state.crawler.start(interval=interval)
+    try:
+        yield
+    finally:
+        # graceful stop so restarts don't leak the thread; shutdown must never raise
+        with suppress(Exception):
+            app.state.crawler.stop()
+
+
+app = FastAPI(title="NavIC API", version="0.1.0", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
@@ -59,7 +86,7 @@ app.state.provider = get_provider()
 # Operator seed list (persisted) + on-demand crawler (Start/Stop from the dashboard).
 # The crawler pulls from the configured targets, falling back to the built-in
 # community monitors when none are set; ingests into the current provider so new
-# leads land on the board live.
+# leads land on the board live. With NAVIC_CRAWLER_AUTOSTART it runs 24/7 (see lifespan).
 app.state.seeds = SeedStore()
 app.state.status = StatusStore()  # per-opportunity workflow status (queue)
 app.state.crawler = CrawlerManager(

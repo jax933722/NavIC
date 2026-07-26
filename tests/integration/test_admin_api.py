@@ -380,3 +380,63 @@ def test_crawler_start_runs_a_cycle_then_stops(monkeypatch):
     assert status["board_total"] == len(board)
 
     assert client.post("/v1/admin/crawler/stop").json()["running"] is False
+
+
+def test_crawler_loop_survives_a_bad_cycle():
+    """24/7 durability: an unexpected error inside a cycle is swallowed and the
+    background thread keeps running (it does not die on the first bad cycle)."""
+    import time
+
+    from apps.api import crawler as crawler_mod
+
+    mgr = crawler_mod.CrawlerManager(provider_getter=InMemoryProvider)
+    calls = {"n": 0}
+
+    def explode():
+        calls["n"] += 1
+        raise RuntimeError("kaboom")
+
+    mgr._run_cycle = explode
+    mgr.start(interval=10, sources=[("hn_freelance", [], {})])
+    try:
+        time.sleep(0.3)
+        st = mgr.status()
+        assert st["running"] is True                 # still alive after a bad cycle
+        assert calls["n"] >= 1                        # the cycle actually ran (and raised)
+        assert st["last_error"].startswith("cycle:")  # error recorded, not crashed
+    finally:
+        mgr.stop()
+    assert mgr.status()["running"] is False
+
+
+def test_crawler_autostarts_when_env_flag_set(monkeypatch):
+    """NAVIC_CRAWLER_AUTOSTART makes the crawler begin on API startup (24/7 mode),
+    with no dashboard click. Entering the TestClient context fires startup events."""
+    import time
+    from pathlib import Path
+
+    from apps.api import crawler as crawler_mod
+
+    from ingestion import StubFetchClient
+
+    url = "https://stub.local/hn"
+    body = (Path(__file__).parent.parent
+            / "fixtures/collectors/hn_freelance/search.json").read_text()
+    monkeypatch.setattr(crawler_mod, "_default_sources", lambda: [("hn_freelance", [url], {})])
+    monkeypatch.setenv("NAVIC_CRAWLER_AUTOSTART", "true")
+    monkeypatch.setenv("NAVIC_CRAWLER_INTERVAL", "10")
+    app.state.provider = InMemoryProvider()
+    app.state.crawler = crawler_mod.CrawlerManager(
+        provider_getter=lambda: app.state.provider,
+        fetch_factory=lambda: StubFetchClient({url: (200, "application/json", body)}))
+
+    with TestClient(app) as client:  # __enter__ triggers FastAPI startup -> autostart
+        status = {}
+        for _ in range(30):
+            status = client.get("/v1/admin/crawler/status").json()
+            if status["running"] and status["cycles"] >= 1:
+                break
+            time.sleep(0.1)
+        assert status["running"] is True   # started without any /start call
+        assert status["cycles"] >= 1
+        client.post("/v1/admin/crawler/stop")

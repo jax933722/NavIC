@@ -169,8 +169,15 @@ licensed provider or the open-source equivalents above, not scraping LinkedIn.
 
 ## The always-on deployment
 
-Turning "runs on my laptop" into "runs 24/7" is four pieces — three already exist in this
-repo:
+**The simplest 24/7 is already on:** set `NAVIC_CRAWLER_AUTOSTART=true` (the Docker demo
+sets it for you) and the API starts the crawler the moment it boots and runs it
+continuously — no dashboard click, and it survives a bad source or a bad cycle without
+dying. Tune the cadence with `NAVIC_CRAWLER_INTERVAL` (seconds; default 180). Leave the
+box (or container) running and leads keep landing on the board.
+
+The heavier, horizontally-scalable production topology below is optional — for when a
+single always-on process isn't enough. Turning "runs on my laptop" into "runs at scale"
+is four pieces — three already exist in this repo:
 
 1. **Data services** (`docker-compose.yml`, already here): PostgreSQL + Apache AGE (system
    of record + graph), OpenSearch (search), Redis, MinIO (raw-document object store).

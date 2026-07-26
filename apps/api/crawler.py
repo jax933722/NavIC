@@ -117,8 +117,15 @@ class CrawlerManager:
 
     # ---- run loop --------------------------------------------------------
     def _loop(self) -> None:
+        # Built to run for days: a cycle isolates each source, and the loop itself
+        # swallows any unexpected error so the thread never dies (24/7 crawling).
         while not self._stop.is_set():
-            self._run_cycle()
+            try:
+                self._run_cycle()
+            except Exception as exc:  # noqa: BLE001  (keep the crawler alive no matter what)
+                log.info("crawl cycle failed", extra={"context": {"err": str(exc)}})
+                with self._lock:
+                    self._state["last_error"] = f"cycle: {str(exc)[:160]}"
             self._stop.wait(self._interval)
 
     def _run_cycle(self) -> None:

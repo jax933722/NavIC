@@ -17,6 +17,11 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    environment:
+      # 24/7 mode: the crawler auto-starts with the API and runs continuously,
+      # pulling fresh leads every NAVIC_CRAWLER_INTERVAL seconds — no clicking Start.
+      NAVIC_CRAWLER_AUTOSTART: "true"
+      NAVIC_CRAWLER_INTERVAL: "180"
     ports:
       - "${NAVIC_API_PORT:-8481}:8000"
     healthcheck:
