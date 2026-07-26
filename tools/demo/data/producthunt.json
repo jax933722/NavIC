@@ -1,0 +1,29 @@
+{
+  "posts": [
+    {
+      "name": "Umbrella Analytics",
+      "tagline": "Realtime dashboards for product teams",
+      "url": "https://www.producthunt.com/posts/umbrella-analytics",
+      "website": "https://umbrella-analytics.com",
+      "makers": [
+        {"name": "Dana Reyes", "headline": "Founder & CEO"},
+        {"name": "Sam Okafor", "headline": "Head of Engineering"}
+      ]
+    },
+    {
+      "name": "Nakatomi Notes",
+      "tagline": "Notes that think with you",
+      "url": "https://www.producthunt.com/posts/nakatomi-notes",
+      "redirect_url": "https://nakatomi.io",
+      "makers": [
+        {"name": "Holly Gennaro"}
+      ]
+    },
+    {
+      "name": "No Website Product",
+      "tagline": "Should be skipped",
+      "url": "https://www.producthunt.com/posts/no-website",
+      "makers": []
+    }
+  ]
+}

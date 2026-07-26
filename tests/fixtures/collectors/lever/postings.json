@@ -1,0 +1,12 @@
+{
+  "company": {"name": "Cyberdyne Systems", "website": "https://cyberdyne.com",
+              "careers_url": "https://jobs.lever.co/cyberdyne"},
+  "postings": [
+    {"text": "Senior Account Executive", "hostedUrl": "https://jobs.lever.co/cyberdyne/1",
+     "categories": {"team": "Sales", "location": "New York, NY", "commitment": "Full-time"}},
+    {"text": "Staff Software Engineer", "hostedUrl": "https://jobs.lever.co/cyberdyne/2",
+     "categories": {"team": "Engineering", "location": "Remote"}},
+    {"text": "Growth Marketing Manager", "hostedUrl": "https://jobs.lever.co/cyberdyne/3",
+     "categories": {"location": "Remote"}}
+  ]
+}

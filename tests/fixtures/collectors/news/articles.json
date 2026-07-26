@@ -1,0 +1,24 @@
+{
+  "articles": [
+    {
+      "title": "Soylent Corp raised $25M Series A to expand its analytics platform",
+      "description": "The funding will fuel hiring across sales and engineering as the company scales.",
+      "url": "https://techpress.example/soylent-series-a",
+      "source": {"name": "TechPress"},
+      "company": {"name": "Soylent Corp", "website": "https://soylent-corp.com"}
+    },
+    {
+      "title": "Tyrell Systems launches new developer platform",
+      "description": "Introducing a platform that helps teams ship faster.",
+      "url": "https://devnews.example/tyrell-launch",
+      "source": {"name": "DevNews"},
+      "company": {"name": "Tyrell Systems", "domain": "tyrell.io"}
+    },
+    {
+      "title": "Opinion: the future of AI",
+      "description": "A general think-piece with no specific company tagged.",
+      "url": "https://techpress.example/opinion-ai",
+      "source": {"name": "TechPress"}
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "company": {"name": "Tyrell Corporation", "website": "https://tyrell.com"},
+  "jobs": [
+    {"title": "Sales Development Rep", "department": "Sales",
+     "location": {"city": "Austin", "region": "TX", "country": "United States"},
+     "url": "https://tyrell.workable.com/j/ABC1"},
+    {"title": "DevOps Engineer", "department": "Engineering",
+     "location": {"city": "Remote", "country": "United States"},
+     "url": "https://tyrell.workable.com/j/ABC2"},
+    {"full_title": "Office Manager", "location": {"city": "Los Angeles", "country": "United States"},
+     "url": "https://tyrell.workable.com/j/ABC3"}
+  ]
+}

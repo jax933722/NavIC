@@ -1,0 +1,22 @@
+{
+  "hits": [
+    {
+      "objectID": "40100001",
+      "author": "founder_a",
+      "comment_text": "We&#x27;re looking for a React developer to build our customer dashboard. Budget ~$8k. More at acme-hq.com",
+      "story_title": "Ask HN: Freelancer? Seeking freelancer?"
+    },
+    {
+      "objectID": "40100002",
+      "author": "maker_b",
+      "comment_text": "Can anyone recommend a good SEO agency? We just launched and need organic traffic.",
+      "story_title": "Ask HN"
+    },
+    {
+      "objectID": "40100003",
+      "author": "reader_c",
+      "comment_text": "Looking for a good sci-fi book recommendation for the weekend.",
+      "story_title": "Ask HN"
+    }
+  ]
+}

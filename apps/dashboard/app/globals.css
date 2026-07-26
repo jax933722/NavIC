@@ -1,0 +1,64 @@
+:root {
+  --bg: #0b0d10;
+  --panel: #14181d;
+  --border: #232a31;
+  --text: #e6e9ee;
+  --muted: #8a94a6;
+  --gold: #c9a227;
+  --silver: #8a94a6;
+  --bronze: #b87333;
+  --accent: #4f8cff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.h1 { font-size: 20px; font-weight: 650; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 20px; }
+
+.tierbar { display: flex; gap: 8px; margin-bottom: 16px; }
+.tierbtn {
+  background: var(--panel); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.tierbtn.active { border-color: var(--accent); background: #1b2733; }
+
+.card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 10px;
+}
+.row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.thesis { font-weight: 600; }
+.company { color: var(--muted); font-size: 13px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+}
+.badge-gold { background: rgba(201,162,39,.15); color: var(--gold); }
+.badge-silver { background: rgba(138,148,166,.15); color: var(--silver); }
+.badge-bronze { background: rgba(184,115,51,.18); color: var(--bronze); }
+
+.score { font-variant-numeric: tabular-nums; font-weight: 650; }
+.scorebar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+.scorebar > span { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+
+.evidence { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  background: #10151b; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 8px; font-size: 12px; color: var(--muted); max-width: 420px;
+}
+.chip .ct { color: var(--accent); }
+.empty, .error { color: var(--muted); padding: 40px; text-align: center; }
+.error { color: #e0666f; }

@@ -1,0 +1,44 @@
+# Local infra stack for NavIC (docs/ARCHITECTURE.md §21.1).
+# Stateful services only; the API/worker apps run on the host during development.
+services:
+  postgres:
+    # Apache AGE image ships PostgreSQL + AGE; pgvector/pg_trgm added via migration.
+    image: apache/age:release_PG16_1.5.0
+    environment:
+      POSTGRES_USER: navic
+      POSTGRES_PASSWORD: navic
+      POSTGRES_DB: navic
+    ports: ["5432:5432"]
+    volumes: ["./.data/pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U navic"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["./.data/redis:/data"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["./.data/minio:/data"]
+
+  opensearch:
+    image: opensearchproject/opensearch:2.13.0
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports: ["9200:9200"]
+    volumes: ["./.data/opensearch:/usr/share/opensearch/data"]
+
+# Temporal (scheduler, spec 03/blueprint §19) is added with the collector runtime
+# in M3 to keep the M0 stack light.

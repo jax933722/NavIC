@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Acme Blog</title>
+    <link>https://acme.com/blog</link>
+    <item>
+      <title>We raised a $15M Series B to scale go-to-market</title>
+      <link>https://acme.com/blog/series-b</link>
+      <dc:creator>Jane Roe</dc:creator>
+      <description>Today we announce our Series B funding round. We are hiring across sales.</description>
+      <pubDate>Mon, 01 Jun 2026 10:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Why we are evaluating a Salesforce alternative for our CRM</title>
+      <link>https://acme.com/blog/crm</link>
+      <dc:creator>Marcus Lee</dc:creator>
+      <description>Our team is frustrated with our CRM and looking at options.</description>
+      <pubDate>Tue, 02 Jun 2026 10:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

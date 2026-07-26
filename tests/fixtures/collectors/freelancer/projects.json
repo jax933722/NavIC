@@ -1,0 +1,31 @@
+{
+  "status": "success",
+  "result": {
+    "projects": [
+      {
+        "id": 38000001,
+        "title": "Need a Shopify developer to build custom product pages",
+        "seo_url": "need-a-shopify-developer",
+        "description": "Looking for a web developer to build on-brand Shopify product pages that convert. Must be experienced with Liquid.",
+        "currency": { "code": "USD", "sign": "$" },
+        "budget": { "minimum": 1500, "maximum": 3000 }
+      },
+      {
+        "id": 38000002,
+        "title": "SEO expert wanted for a new store",
+        "seo_url": "seo-expert-wanted",
+        "description": "Can anyone recommend an SEO agency to help us rank? We just launched.",
+        "currency": { "code": "USD", "sign": "$" },
+        "budget": { "minimum": 500, "maximum": 900 }
+      },
+      {
+        "id": 38000003,
+        "title": "Data entry from a PDF into a spreadsheet",
+        "seo_url": "data-entry-pdf",
+        "description": "Copy 200 rows from a PDF into Excel.",
+        "currency": { "code": "USD", "sign": "$" },
+        "budget": { "minimum": 30, "maximum": 60 }
+      }
+    ]
+  }
+}

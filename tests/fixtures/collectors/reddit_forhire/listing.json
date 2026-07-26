@@ -1,0 +1,45 @@
+{
+  "kind": "Listing",
+  "data": {
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "title": "[Hiring] Need a Shopify developer to build product pages",
+          "selftext": "We run gearloftgear.com and need someone to build high-converting Shopify product pages. Budget around $2500, timeline 3 weeks. Remote.",
+          "link_flair_text": "Hiring",
+          "url_overridden_by_dest": "",
+          "permalink": "/r/forhire/comments/aaa111/hiring_shopify_developer/"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "[Hiring] Looking for a React/Node developer for our SaaS",
+          "selftext": "Startup at https://cogwheel-labs.io needs a React and Node.js developer for a 2 month contract. $9000 budget.",
+          "link_flair_text": "Hiring",
+          "url_overridden_by_dest": "",
+          "permalink": "/r/forhire/comments/bbb222/hiring_react_node/"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "[For Hire] Senior full-stack developer available",
+          "selftext": "I'm a freelance developer available for contract work. Portfolio at devportfolio.example.",
+          "link_flair_text": "For Hire",
+          "permalink": "/r/forhire/comments/ccc333/for_hire_fullstack/"
+        }
+      },
+      {
+        "kind": "t3",
+        "data": {
+          "title": "[Hiring] Need a logo designer",
+          "selftext": "Looking for a logo designer for a new brand. No website yet, DM me.",
+          "link_flair_text": "Hiring",
+          "permalink": "/r/forhire/comments/ddd444/hiring_logo/"
+        }
+      }
+    ]
+  }
+}

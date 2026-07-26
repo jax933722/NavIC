@@ -1,0 +1,46 @@
+# One-command local demo of NavIC — no database required.
+#
+#   docker compose -f docker-compose.demo.yml up --build
+#   → open http://localhost:8480
+#
+# The API runs the in-memory backend pre-seeded with realistic multi-source
+# sample data (Gold / Silver / Bronze opportunities). The dashboard is the real
+# Next.js app pointed at the API. This mirrors what a fresh clone should show.
+#
+# Host ports are intentionally uncommon (8480 dashboard, 8481 API) to avoid
+# clashing with other dev servers (3000, 5173, 8000). Override them if needed:
+#   NAVIC_DASHBOARD_PORT=9480 NAVIC_API_PORT=9481 docker compose \
+#     -f docker-compose.demo.yml up --build
+# (changing the API port requires a rebuild, since the browser URL is baked in.)
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      # 24/7 mode: the crawler auto-starts with the API and runs continuously,
+      # pulling fresh leads every NAVIC_CRAWLER_INTERVAL seconds — no clicking Start.
+      NAVIC_CRAWLER_AUTOSTART: "true"
+      NAVIC_CRAWLER_INTERVAL: "180"
+    ports:
+      - "${NAVIC_API_PORT:-8481}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)\""]
+      # Poll fast only until first-healthy (start_period), then back off so the
+      # log isn't flooded with /health lines once the API is up.
+      start_period: 40s
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      args:
+        # Browser-facing API URL (host-published port), inlined at build time.
+        NEXT_PUBLIC_API_URL: "http://localhost:${NAVIC_API_PORT:-8481}"
+    ports:
+      - "${NAVIC_DASHBOARD_PORT:-8480}:3000"
+    depends_on:
+      api:
+        condition: service_healthy

@@ -1,0 +1,13 @@
+# Keep the API build context (repo root) lean and reproducible.
+.git
+.venv
+.data
+.hypothesis
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.pyc
+tests
+apps/dashboard/node_modules
+apps/dashboard/.next
+migrations/__pycache__

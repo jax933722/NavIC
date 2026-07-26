@@ -1,0 +1,22 @@
+{
+  "company": {
+    "name": "LeadSwap AI",
+    "website": "https://leadswap.ai",
+    "linkedin_slug": "leadswap-ai",
+    "industry": "Software"
+  },
+  "people": [
+    {
+      "name": "Swagat Gathibandhe",
+      "title": "Founder",
+      "linkedin_url": "https://www.linkedin.com/in/swagat-gathibandhe",
+      "linkedin_slug": "swagat-gathibandhe"
+    }
+  ],
+  "posts": [
+    {
+      "url": "https://www.linkedin.com/posts/swagat_ecommerce-webdev",
+      "text": "Looking for a Web Developer for an E-commerce Website. I'm looking for an experienced Web Developer / Web Design Agency / Freelancer to build a professional, user-friendly e-commerce website. Timeline: 30 days. Budget: $2000 USD (including domain and hosting). If you're interested, please comment below or send me a direct message."
+    }
+  ]
+}
